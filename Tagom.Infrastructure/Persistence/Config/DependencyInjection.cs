@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using TgomCRM.Infrastructure.Persistence;
+using Tagom.Infrastructure.Persistence;
 
 namespace Tagom.Infrastructure
 {
@@ -10,9 +10,10 @@ namespace Tagom.Infrastructure
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
         {
             var cs = config.GetConnectionString("DefaultConnection")
-                     ?? "Server=localhost\\SQLEXPRESS;Database=TagomCrm;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
+                     ?? "Server=MALAK_JACKOP\\MSSQLSERVER11;Database=TagomCrm;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
 
-            services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(cs));
+            services.AddDbContext<TagomDbContext>(opt => opt.UseSqlServer(cs));
+
             return services;
         }
     }
