@@ -13,6 +13,8 @@
 
   <ItemGroup>
     <Folder Include="Identity\" />
+    <Folder Include="Migrations\" />
+    <Folder Include="Persistence\Config\" />
     <Folder Include="Repositories\" />
   </ItemGroup>
 
