@@ -62,7 +62,13 @@ namespace TagomCrm.API.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly TagomDbContext _db;
-        public ProductsController(TagomDbContext db) => _db = db;
+        private readonly IWebHostEnvironment _env;
+
+        public ProductsController(TagomDbContext db, IWebHostEnvironment env)
+        {
+            _db = db;
+            _env = env;
+        }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
@@ -77,6 +83,7 @@ namespace TagomCrm.API.Controllers
                     p.Price,
                     p.Category,
                     p.Stock,
+                    p.ImageUrl,
                     Supplier = new { p.Supplier.Id, p.Supplier.Name }
                 })
                 .ToListAsync();
@@ -97,6 +104,7 @@ namespace TagomCrm.API.Controllers
                     p.Price,
                     p.Category,
                     p.Stock,
+                    p.ImageUrl,
                     Supplier = new { p.Supplier.Id, p.Supplier.Name }
                 })
                 .FirstOrDefaultAsync();
@@ -108,7 +116,7 @@ namespace TagomCrm.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] ProductDto dto)
+        public async Task<IActionResult> Create([FromForm] ProductDto dto)
         {
             var supplier = await _db.Suppliers.FindAsync(dto.SupplierId);
             if (supplier == null)
@@ -118,11 +126,34 @@ namespace TagomCrm.API.Controllers
                 .Include(p => p.Inventory)
                 .FirstOrDefaultAsync(p => p.Name.ToLower() == dto.Name.ToLower() && p.SupplierId == dto.SupplierId);
 
+            string? imagePath = null;
+
+            // Handle image upload
+            if (dto.ImageFile != null)
+            {
+                var uploadsFolder = Path.Combine(_env.WebRootPath ?? "wwwroot", "images");
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                var fileName = $"{Guid.NewGuid()}_{dto.ImageFile.FileName}";
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await dto.ImageFile.CopyToAsync(stream);
+                }
+
+                imagePath = $"/images/{fileName}";
+            }
+
             if (existingProduct != null)
             {
                 existingProduct.Stock += dto.Stock;
                 existingProduct.Price = dto.Price;
                 existingProduct.Category = dto.Category;
+
+                if (imagePath != null)
+                    existingProduct.ImageUrl = imagePath;
 
                 if (existingProduct.Inventory == null)
                     existingProduct.Inventory = new Inventory { ProductId = existingProduct.Id, Quantity = existingProduct.Stock };
@@ -141,6 +172,7 @@ namespace TagomCrm.API.Controllers
                         existingProduct.Stock,
                         existingProduct.Price,
                         existingProduct.Category,
+                        existingProduct.ImageUrl,
                         Supplier = new { supplier.Id, supplier.Name }
                     }
                 });
@@ -153,7 +185,8 @@ namespace TagomCrm.API.Controllers
                 Category = dto.Category,
                 Stock = dto.Stock,
                 SupplierId = dto.SupplierId,
-                Inventory = new Inventory { Quantity = dto.Stock }
+                Inventory = new Inventory { Quantity = dto.Stock },
+                ImageUrl = imagePath
             };
 
             _db.Products.Add(product);
@@ -169,6 +202,7 @@ namespace TagomCrm.API.Controllers
                     product.Price,
                     product.Category,
                     product.Stock,
+                    product.ImageUrl,
                     Supplier = new { supplier.Id, supplier.Name }
                 }
             });
@@ -178,204 +212,101 @@ namespace TagomCrm.API.Controllers
     // ==============================
     // ✅ INVENTORY CONTROLLER
     // ==============================
-    [ApiController]
-    [Route("api/[controller]")]
-    public class InventoryController : ControllerBase
-    {
-        private readonly TagomDbContext _db;
-        public InventoryController(TagomDbContext db) => _db = db;
-
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            var inventoryData = await _db.Inventories
-                .Include(i => i.Product)
-                .ThenInclude(p => p.Supplier)
-                .AsNoTracking()
-                .GroupBy(i => i.Product.Category)
-                .Select(categoryGroup => new
-                {
-                    Category = categoryGroup.Key,
-                    Products = categoryGroup.GroupBy(x => new { x.Product.Id, x.Product.Name })
-                        .Select(productGroup => new
-                        {
-                            ProductId = productGroup.Key.Id,
-                            ProductName = productGroup.Key.Name,
-                            TotalStock = productGroup.Sum(x => x.Quantity),
-                            Suppliers = productGroup.Select(x => new
-                            {
-                                SupplierId = x.Product.Supplier.Id,
-                                SupplierName = x.Product.Supplier.Name,
-                                StockFromSupplier = x.Quantity
-                            }).ToList()
-                        }).ToList()
-                })
-                .ToListAsync();
-
-            return Ok(inventoryData);
-        }
-
-        [HttpPost("increase/{productId}")]
-        public async Task<IActionResult> IncreaseStock(int productId, [FromQuery] int amount)
-        {
-            if (amount <= 0) return BadRequest("Increase amount must be greater than 0.");
-
-            var product = await _db.Products.FindAsync(productId);
-            if (product == null) return NotFound($"Product with ID {productId} not found.");
-
-            var inventory = await _db.Inventories.FirstOrDefaultAsync(i => i.ProductId == productId);
-            if (inventory == null)
-            {
-                inventory = new Inventory { ProductId = productId, Quantity = amount };
-                _db.Inventories.Add(inventory);
-            }
-            else
-            {
-                inventory.AddStock(amount);
-            }
-
-            product.Stock += amount;
-            await _db.SaveChangesAsync();
-
-            return Ok(new
-            {
-                message = $"Increased stock for '{product.Name}' by {amount}.",
-                inventory = new { product.Id, product.Name, inventory.Quantity }
-            });
-        }
-
-        [HttpPost("decrease/{productId}")]
-        public async Task<IActionResult> DecreaseStock(int productId, [FromQuery] int amount)
-        {
-            if (amount <= 0) return BadRequest("Decrease amount must be greater than 0.");
-
-            var product = await _db.Products.FindAsync(productId);
-            if (product == null) return NotFound($"Product with ID {productId} not found.");
-
-            var inventory = await _db.Inventories.FirstOrDefaultAsync(i => i.ProductId == productId);
-            if (inventory == null) return NotFound("Inventory record not found for this product.");
-
-            try
-            {
-                inventory.RemoveStock(amount);
-                product.Stock -= amount;
-                if (product.Stock < 0) product.Stock = 0;
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-
-            await _db.SaveChangesAsync();
-
-            return Ok(new
-            {
-                message = $"Decreased stock for '{product.Name}' by {amount}.",
-                inventory = new { product.Id, product.Name, inventory.Quantity }
-            });
-        }
-    }
-
-    // ==============================
-    // ✅ INVOICE CONTROLLER
-    // ==============================
     //[ApiController]
     //[Route("api/[controller]")]
-    //public class InvoiceController : ControllerBase
+    //public class InventoryController : ControllerBase
     //{
     //    private readonly TagomDbContext _db;
-    //    public InvoiceController(TagomDbContext db) => _db = db;
+    //    public InventoryController(TagomDbContext db) => _db = db;
 
-    //    // GET invoice by ID
-    //    [HttpGet("{id}")]
-    //    public async Task<IActionResult> GetInvoice(int id)
+    //    [HttpGet]
+    //    public async Task<IActionResult> GetAll()
     //    {
-    //        var invoice = await _db.Invoices
-    //            .Include(i => i.Customer)
-    //            .Include(i => i.Items)
-    //                .ThenInclude(si => si.Product)
+    //        var inventoryData = await _db.Inventories
+    //            .Include(i => i.Product)
+    //            .ThenInclude(p => p.Supplier)
     //            .AsNoTracking()
-    //            .FirstOrDefaultAsync(i => i.Id == id);
-
-    //        if (invoice == null) return NotFound($"Invoice {id} not found.");
-
-    //        var dto = new InvoiceDto
-    //        {
-    //            OrderNumber = invoice.Id,
-    //            CustomerName = invoice.Customer.Name,
-    //            CustomerPhone = invoice.Customer.Phone,
-    //            SaleDate = invoice.SaleDate,
-    //            Items = invoice.Items.Select(i => new InvoiceItemDto
+    //            .GroupBy(i => i.Product.Category)
+    //            .Select(categoryGroup => new
     //            {
-    //                ProductId = i.ProductId,
-    //                ProductName = i.Product.Name,
-    //                Quantity = i.Quantity,
-    //                UnitPrice = i.UnitPrice
-    //            }).ToList(),
-    //            TotalAmount = invoice.TotalAmount
-    //        };
+    //                Category = categoryGroup.Key,
+    //                Products = categoryGroup.GroupBy(x => new { x.Product.Id, x.Product.Name })
+    //                    .Select(productGroup => new
+    //                    {
+    //                        ProductId = productGroup.Key.Id,
+    //                        ProductName = productGroup.Key.Name,
+    //                        TotalStock = productGroup.Sum(x => x.Quantity),
+    //                        Suppliers = productGroup.Select(x => new
+    //                        {
+    //                            SupplierId = x.Product.Supplier.Id,
+    //                            SupplierName = x.Product.Supplier.Name,
+    //                            StockFromSupplier = x.Quantity
+    //                        }).ToList()
+    //                    }).ToList()
+    //            })
+    //            .ToListAsync();
 
-    //        return Ok(dto);
+    //        return Ok(inventoryData);
     //    }
 
-    //    // POST create invoice (decrease inventory)
-    //    [HttpPost]
-    //    public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceDto dto)
+    //    [HttpPost("increase/{productId}")]
+    //    public async Task<IActionResult> IncreaseStock(int productId, [FromQuery] int amount)
     //    {
-    //        var customer = await _db.Customers.FindAsync(dto.CustomerId);
-    //        if (customer == null) return BadRequest("Customer not found.");
+    //        if (amount <= 0) return BadRequest("Increase amount must be greater than 0.");
 
-    //        var invoice = new Invoice { CustomerId = dto.CustomerId };
+    //        var product = await _db.Products.FindAsync(productId);
+    //        if (product == null) return NotFound($"Product with ID {productId} not found.");
 
-    //        foreach (var item in dto.Items)
+    //        var inventory = await _db.Inventories.FirstOrDefaultAsync(i => i.ProductId == productId);
+    //        if (inventory == null)
     //        {
-    //            var product = await _db.Products
-    //                .Include(p => p.Inventory)
-    //                .FirstOrDefaultAsync(p => p.Id == item.ProductId);
-
-    //            if (product == null) return BadRequest($"Product {item.ProductId} not found.");
-    //            if (product.Inventory == null) return BadRequest($"Inventory for {product.Name} not found.");
-    //            if (product.Inventory.Quantity < item.Quantity) return BadRequest($"Not enough stock for {product.Name}.");
-
-    //            product.Inventory.RemoveStock(item.Quantity);
-    //            product.Stock -= item.Quantity;
-
-    //            invoice.Items.Add(new SaleItem
-    //            {
-    //                ProductId = item.ProductId,
-    //                Quantity = item.Quantity,
-    //                UnitPrice = item.UnitPrice
-    //            });
+    //            inventory = new Inventory { ProductId = productId, Quantity = amount };
+    //            _db.Inventories.Add(inventory);
+    //        }
+    //        else
+    //        {
+    //            inventory.AddStock(amount);
     //        }
 
-    //        _db.Invoices.Add(invoice);
+    //        product.Stock += amount;
     //        await _db.SaveChangesAsync();
 
-    //        return Ok(new { message = "Invoice created and stock updated.", invoiceId = invoice.Id });
+    //        return Ok(new
+    //        {
+    //            message = $"Increased stock for '{product.Name}' by {amount}.",
+    //            inventory = new { product.Id, product.Name, inventory.Quantity }
+    //        });
     //    }
 
-    //    // POST retrieve items (increase inventory)
-    //    [HttpPost("retrieve/{invoiceId}")]
-    //    public async Task<IActionResult> RetrieveItems(int invoiceId)
+    //    [HttpPost("decrease/{productId}")]
+    //    public async Task<IActionResult> DecreaseStock(int productId, [FromQuery] int amount)
     //    {
-    //        var invoice = await _db.Invoices
-    //            .Include(i => i.Items)
-    //                .ThenInclude(si => si.Product)
-    //                    .ThenInclude(p => p.Inventory)
-    //            .FirstOrDefaultAsync(i => i.Id == invoiceId);
+    //        if (amount <= 0) return BadRequest("Decrease amount must be greater than 0.");
 
-    //        if (invoice == null) return NotFound($"Invoice {invoiceId} not found.");
+    //        var product = await _db.Products.FindAsync(productId);
+    //        if (product == null) return NotFound($"Product with ID {productId} not found.");
 
-    //        foreach (var item in invoice.Items)
+    //        var inventory = await _db.Inventories.FirstOrDefaultAsync(i => i.ProductId == productId);
+    //        if (inventory == null) return NotFound("Inventory record not found for this product.");
+
+    //        try
     //        {
-    //            if (item.Product.Inventory != null)
-    //                item.Product.Inventory.AddStock(item.Quantity);
-
-    //            item.Product.Stock += item.Quantity;
+    //            inventory.RemoveStock(amount);
+    //            product.Stock -= amount;
+    //            if (product.Stock < 0) product.Stock = 0;
+    //        }
+    //        catch (InvalidOperationException ex)
+    //        {
+    //            return BadRequest(ex.Message);
     //        }
 
     //        await _db.SaveChangesAsync();
-    //        return Ok(new { message = $"Inventory restored for Invoice {invoiceId}." });
+
+    //        return Ok(new
+    //        {
+    //            message = $"Decreased stock for '{product.Name}' by {amount}.",
+    //            inventory = new { product.Id, product.Name, inventory.Quantity }
+    //        });
     //    }
     //}
 }

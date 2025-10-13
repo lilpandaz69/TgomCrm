@@ -9,6 +9,8 @@
         public int SupplierId { get; set; }
         public Supplier Supplier { get; set; } = null!;
         public Inventory? Inventory { get; set; }
+        public string? ImageUrl { get; set; }
+
     }
 
 }
