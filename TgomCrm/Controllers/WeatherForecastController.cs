@@ -16,36 +16,23 @@ namespace TagomCrm.API.Controllers
         private readonly TagomDbContext _db;
         public SuppliersController(TagomDbContext db) => _db = db;
 
-        // ✅ GET all suppliers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             var suppliers = await _db.Suppliers
                 .AsNoTracking()
-                .Select(s => new
-                {
-                    s.Id,
-                    s.Name,
-                    s.Phone,
-                })
+                .Select(s => new { s.Id, s.Name, s.Phone })
                 .ToListAsync();
-
             return Ok(suppliers);
         }
 
-        // ✅ GET supplier by id
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
             var supplier = await _db.Suppliers
                 .AsNoTracking()
                 .Where(s => s.Id == id)
-                .Select(s => new
-                {
-                    s.Id,
-                    s.Name,
-                    s.Phone,
-                })
+                .Select(s => new { s.Id, s.Name, s.Phone })
                 .FirstOrDefaultAsync();
 
             if (supplier == null)
@@ -54,7 +41,6 @@ namespace TagomCrm.API.Controllers
             return Ok(supplier);
         }
 
-        // ✅ POST create new supplier
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Supplier s)
         {
@@ -64,12 +50,7 @@ namespace TagomCrm.API.Controllers
             _db.Suppliers.Add(s);
             await _db.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = s.Id }, new
-            {
-                s.Id,
-                s.Name,
-                s.Phone,
-            });
+            return CreatedAtAction(nameof(GetById), new { id = s.Id }, new { s.Id, s.Name, s.Phone });
         }
     }
 
@@ -83,7 +64,6 @@ namespace TagomCrm.API.Controllers
         private readonly TagomDbContext _db;
         public ProductsController(TagomDbContext db) => _db = db;
 
-        // ✅ GET all products (with supplier info)
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -97,18 +77,12 @@ namespace TagomCrm.API.Controllers
                     p.Price,
                     p.Category,
                     p.Stock,
-                    Supplier = new
-                    {
-                        p.Supplier.Id,
-                        p.Supplier.Name
-                    }
+                    Supplier = new { p.Supplier.Id, p.Supplier.Name }
                 })
                 .ToListAsync();
-
             return Ok(products);
         }
 
-        // ✅ GET product by ID
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -123,11 +97,7 @@ namespace TagomCrm.API.Controllers
                     p.Price,
                     p.Category,
                     p.Stock,
-                    Supplier = new
-                    {
-                        p.Supplier.Id,
-                        p.Supplier.Name
-                    }
+                    Supplier = new { p.Supplier.Id, p.Supplier.Name }
                 })
                 .FirstOrDefaultAsync();
 
@@ -137,7 +107,6 @@ namespace TagomCrm.API.Controllers
             return Ok(product);
         }
 
-        // ✅ POST create or update product (and update inventory)
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] ProductDto dto)
         {
@@ -145,11 +114,9 @@ namespace TagomCrm.API.Controllers
             if (supplier == null)
                 return BadRequest($"Supplier with ID {dto.SupplierId} not found.");
 
-            // ✅ Check if product with same name & supplier exists
             var existingProduct = await _db.Products
                 .Include(p => p.Inventory)
-                .FirstOrDefaultAsync(p => p.Name.ToLower() == dto.Name.ToLower()
-                                       && p.SupplierId == dto.SupplierId);
+                .FirstOrDefaultAsync(p => p.Name.ToLower() == dto.Name.ToLower() && p.SupplierId == dto.SupplierId);
 
             if (existingProduct != null)
             {
@@ -157,19 +124,10 @@ namespace TagomCrm.API.Controllers
                 existingProduct.Price = dto.Price;
                 existingProduct.Category = dto.Category;
 
-                // ✅ Update inventory stock
                 if (existingProduct.Inventory == null)
-                {
-                    existingProduct.Inventory = new Inventory
-                    {
-                        ProductId = existingProduct.Id,
-                        Quantity = existingProduct.Stock
-                    };
-                }
+                    existingProduct.Inventory = new Inventory { ProductId = existingProduct.Id, Quantity = existingProduct.Stock };
                 else
-                {
                     existingProduct.Inventory.Quantity += dto.Stock;
-                }
 
                 await _db.SaveChangesAsync();
 
@@ -183,16 +141,11 @@ namespace TagomCrm.API.Controllers
                         existingProduct.Stock,
                         existingProduct.Price,
                         existingProduct.Category,
-                        Supplier = new
-                        {
-                            supplier.Id,
-                            supplier.Name
-                        }
+                        Supplier = new { supplier.Id, supplier.Name }
                     }
                 });
             }
 
-            // ✅ Otherwise create a new product and its inventory record
             var product = new Product
             {
                 Name = dto.Name,
@@ -200,10 +153,7 @@ namespace TagomCrm.API.Controllers
                 Category = dto.Category,
                 Stock = dto.Stock,
                 SupplierId = dto.SupplierId,
-                Inventory = new Inventory
-                {
-                    Quantity = dto.Stock
-                }
+                Inventory = new Inventory { Quantity = dto.Stock }
             };
 
             _db.Products.Add(product);
@@ -219,11 +169,7 @@ namespace TagomCrm.API.Controllers
                     product.Price,
                     product.Category,
                     product.Stock,
-                    Supplier = new
-                    {
-                        supplier.Id,
-                        supplier.Name
-                    }
+                    Supplier = new { supplier.Id, supplier.Name }
                 }
             });
         }
@@ -239,8 +185,6 @@ namespace TagomCrm.API.Controllers
         private readonly TagomDbContext _db;
         public InventoryController(TagomDbContext db) => _db = db;
 
-        // ✅ GET: api/inventory
-        // Displays inventory grouped by category → product → supplier
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -255,7 +199,7 @@ namespace TagomCrm.API.Controllers
                     Products = categoryGroup.GroupBy(x => new { x.Product.Id, x.Product.Name })
                         .Select(productGroup => new
                         {
-                            ProductId = productGroup.Key.Id,  // ✅ Include ProductId
+                            ProductId = productGroup.Key.Id,
                             ProductName = productGroup.Key.Name,
                             TotalStock = productGroup.Sum(x => x.Quantity),
                             Suppliers = productGroup.Select(x => new
@@ -271,25 +215,18 @@ namespace TagomCrm.API.Controllers
             return Ok(inventoryData);
         }
 
-        // ✅ POST: api/inventory/increase/{productId}?amount=5
         [HttpPost("increase/{productId}")]
         public async Task<IActionResult> IncreaseStock(int productId, [FromQuery] int amount)
         {
-            if (amount <= 0)
-                return BadRequest("Increase amount must be greater than 0.");
+            if (amount <= 0) return BadRequest("Increase amount must be greater than 0.");
 
             var product = await _db.Products.FindAsync(productId);
-            if (product == null)
-                return NotFound($"Product with ID {productId} not found.");
+            if (product == null) return NotFound($"Product with ID {productId} not found.");
 
             var inventory = await _db.Inventories.FirstOrDefaultAsync(i => i.ProductId == productId);
             if (inventory == null)
             {
-                inventory = new Inventory
-                {
-                    ProductId = productId,
-                    Quantity = amount
-                };
+                inventory = new Inventory { ProductId = productId, Quantity = amount };
                 _db.Inventories.Add(inventory);
             }
             else
@@ -303,29 +240,20 @@ namespace TagomCrm.API.Controllers
             return Ok(new
             {
                 message = $"Increased stock for '{product.Name}' by {amount}.",
-                inventory = new
-                {
-                    product.Id,
-                    product.Name,
-                    inventory.Quantity
-                }
+                inventory = new { product.Id, product.Name, inventory.Quantity }
             });
         }
 
-        // ✅ POST: api/inventory/decrease/{productId}?amount=5
         [HttpPost("decrease/{productId}")]
         public async Task<IActionResult> DecreaseStock(int productId, [FromQuery] int amount)
         {
-            if (amount <= 0)
-                return BadRequest("Decrease amount must be greater than 0.");
+            if (amount <= 0) return BadRequest("Decrease amount must be greater than 0.");
 
             var product = await _db.Products.FindAsync(productId);
-            if (product == null)
-                return NotFound($"Product with ID {productId} not found.");
+            if (product == null) return NotFound($"Product with ID {productId} not found.");
 
             var inventory = await _db.Inventories.FirstOrDefaultAsync(i => i.ProductId == productId);
-            if (inventory == null)
-                return NotFound("Inventory record not found for this product.");
+            if (inventory == null) return NotFound("Inventory record not found for this product.");
 
             try
             {
@@ -343,13 +271,111 @@ namespace TagomCrm.API.Controllers
             return Ok(new
             {
                 message = $"Decreased stock for '{product.Name}' by {amount}.",
-                inventory = new
-                {
-                    product.Id,
-                    product.Name,
-                    inventory.Quantity
-                }
+                inventory = new { product.Id, product.Name, inventory.Quantity }
             });
         }
     }
+
+    // ==============================
+    // ✅ INVOICE CONTROLLER
+    // ==============================
+    //[ApiController]
+    //[Route("api/[controller]")]
+    //public class InvoiceController : ControllerBase
+    //{
+    //    private readonly TagomDbContext _db;
+    //    public InvoiceController(TagomDbContext db) => _db = db;
+
+    //    // GET invoice by ID
+    //    [HttpGet("{id}")]
+    //    public async Task<IActionResult> GetInvoice(int id)
+    //    {
+    //        var invoice = await _db.Invoices
+    //            .Include(i => i.Customer)
+    //            .Include(i => i.Items)
+    //                .ThenInclude(si => si.Product)
+    //            .AsNoTracking()
+    //            .FirstOrDefaultAsync(i => i.Id == id);
+
+    //        if (invoice == null) return NotFound($"Invoice {id} not found.");
+
+    //        var dto = new InvoiceDto
+    //        {
+    //            OrderNumber = invoice.Id,
+    //            CustomerName = invoice.Customer.Name,
+    //            CustomerPhone = invoice.Customer.Phone,
+    //            SaleDate = invoice.SaleDate,
+    //            Items = invoice.Items.Select(i => new InvoiceItemDto
+    //            {
+    //                ProductId = i.ProductId,
+    //                ProductName = i.Product.Name,
+    //                Quantity = i.Quantity,
+    //                UnitPrice = i.UnitPrice
+    //            }).ToList(),
+    //            TotalAmount = invoice.TotalAmount
+    //        };
+
+    //        return Ok(dto);
+    //    }
+
+    //    // POST create invoice (decrease inventory)
+    //    [HttpPost]
+    //    public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceDto dto)
+    //    {
+    //        var customer = await _db.Customers.FindAsync(dto.CustomerId);
+    //        if (customer == null) return BadRequest("Customer not found.");
+
+    //        var invoice = new Invoice { CustomerId = dto.CustomerId };
+
+    //        foreach (var item in dto.Items)
+    //        {
+    //            var product = await _db.Products
+    //                .Include(p => p.Inventory)
+    //                .FirstOrDefaultAsync(p => p.Id == item.ProductId);
+
+    //            if (product == null) return BadRequest($"Product {item.ProductId} not found.");
+    //            if (product.Inventory == null) return BadRequest($"Inventory for {product.Name} not found.");
+    //            if (product.Inventory.Quantity < item.Quantity) return BadRequest($"Not enough stock for {product.Name}.");
+
+    //            product.Inventory.RemoveStock(item.Quantity);
+    //            product.Stock -= item.Quantity;
+
+    //            invoice.Items.Add(new SaleItem
+    //            {
+    //                ProductId = item.ProductId,
+    //                Quantity = item.Quantity,
+    //                UnitPrice = item.UnitPrice
+    //            });
+    //        }
+
+    //        _db.Invoices.Add(invoice);
+    //        await _db.SaveChangesAsync();
+
+    //        return Ok(new { message = "Invoice created and stock updated.", invoiceId = invoice.Id });
+    //    }
+
+    //    // POST retrieve items (increase inventory)
+    //    [HttpPost("retrieve/{invoiceId}")]
+    //    public async Task<IActionResult> RetrieveItems(int invoiceId)
+    //    {
+    //        var invoice = await _db.Invoices
+    //            .Include(i => i.Items)
+    //                .ThenInclude(si => si.Product)
+    //                    .ThenInclude(p => p.Inventory)
+    //            .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+    //        if (invoice == null) return NotFound($"Invoice {invoiceId} not found.");
+
+    //        foreach (var item in invoice.Items)
+    //        {
+    //            if (item.Product.Inventory != null)
+    //                item.Product.Inventory.AddStock(item.Quantity);
+
+    //            item.Product.Stock += item.Quantity;
+    //        }
+
+    //        await _db.SaveChangesAsync();
+    //        return Ok(new { message = $"Inventory restored for Invoice {invoiceId}." });
+    //    }
+    //}
 }

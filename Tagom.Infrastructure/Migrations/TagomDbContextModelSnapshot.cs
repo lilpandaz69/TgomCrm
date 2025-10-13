@@ -22,6 +22,26 @@ namespace Tagom.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Tagom.Domain.Entities.Customer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Customers");
+                });
+
             modelBuilder.Entity("Tagom.Domain.Entities.Inventory", b =>
                 {
                     b.Property<int>("Id")
@@ -42,6 +62,27 @@ namespace Tagom.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Inventories");
+                });
+
+            modelBuilder.Entity("Tagom.Domain.Entities.Invoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SaleDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.ToTable("Invoices");
                 });
 
             modelBuilder.Entity("Tagom.Domain.Entities.Product", b =>
@@ -75,25 +116,6 @@ namespace Tagom.Infrastructure.Migrations
                     b.ToTable("Products");
                 });
 
-            modelBuilder.Entity("Tagom.Domain.Entities.Sale", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("SaleDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("TotalAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Sales");
-                });
-
             modelBuilder.Entity("Tagom.Domain.Entities.SaleItem", b =>
                 {
                     b.Property<int>("Id")
@@ -102,13 +124,13 @@ namespace Tagom.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("int");
+
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
 
                     b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SaleId")
                         .HasColumnType("int");
 
                     b.Property<decimal>("UnitPrice")
@@ -116,9 +138,9 @@ namespace Tagom.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId");
+                    b.HasIndex("InvoiceId");
 
-                    b.HasIndex("SaleId");
+                    b.HasIndex("ProductId");
 
                     b.ToTable("SaleItems");
                 });
@@ -154,6 +176,17 @@ namespace Tagom.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Tagom.Domain.Entities.Invoice", b =>
+                {
+                    b.HasOne("Tagom.Domain.Entities.Customer", "Customer")
+                        .WithMany("Invoices")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+                });
+
             modelBuilder.Entity("Tagom.Domain.Entities.Product", b =>
                 {
                     b.HasOne("Tagom.Domain.Entities.Supplier", "Supplier")
@@ -167,31 +200,36 @@ namespace Tagom.Infrastructure.Migrations
 
             modelBuilder.Entity("Tagom.Domain.Entities.SaleItem", b =>
                 {
+                    b.HasOne("Tagom.Domain.Entities.Invoice", "Invoice")
+                        .WithMany("Items")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Tagom.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Tagom.Domain.Entities.Sale", "Sale")
-                        .WithMany("Items")
-                        .HasForeignKey("SaleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Invoice");
 
                     b.Navigation("Product");
+                });
 
-                    b.Navigation("Sale");
+            modelBuilder.Entity("Tagom.Domain.Entities.Customer", b =>
+                {
+                    b.Navigation("Invoices");
+                });
+
+            modelBuilder.Entity("Tagom.Domain.Entities.Invoice", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("Tagom.Domain.Entities.Product", b =>
                 {
                     b.Navigation("Inventory");
-                });
-
-            modelBuilder.Entity("Tagom.Domain.Entities.Sale", b =>
-                {
-                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("Tagom.Domain.Entities.Supplier", b =>

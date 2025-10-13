@@ -6,23 +6,23 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Tagom.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class intail : Migration
+    public partial class inteal : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Sales",
+                name: "Customers",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    SaleDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Phone = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Sales", x => x.Id);
+                    table.PrimaryKey("PK_Customers", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -37,6 +37,26 @@ namespace Tagom.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Suppliers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Invoices",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SaleDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CustomerId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Invoices", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Invoices_Customers_CustomerId",
+                        column: x => x.CustomerId,
+                        principalTable: "Customers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -88,7 +108,7 @@ namespace Tagom.Infrastructure.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    SaleId = table.Column<int>(type: "int", nullable: false),
+                    InvoiceId = table.Column<int>(type: "int", nullable: false),
                     ProductId = table.Column<int>(type: "int", nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false),
                     UnitPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
@@ -97,15 +117,15 @@ namespace Tagom.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_SaleItems", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_SaleItems_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
+                        name: "FK_SaleItems_Invoices_InvoiceId",
+                        column: x => x.InvoiceId,
+                        principalTable: "Invoices",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_SaleItems_Sales_SaleId",
-                        column: x => x.SaleId,
-                        principalTable: "Sales",
+                        name: "FK_SaleItems_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -117,19 +137,24 @@ namespace Tagom.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Invoices_CustomerId",
+                table: "Invoices",
+                column: "CustomerId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Products_SupplierId",
                 table: "Products",
                 column: "SupplierId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_SaleItems_InvoiceId",
+                table: "SaleItems",
+                column: "InvoiceId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SaleItems_ProductId",
                 table: "SaleItems",
                 column: "ProductId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SaleItems_SaleId",
-                table: "SaleItems",
-                column: "SaleId");
         }
 
         /// <inheritdoc />
@@ -142,10 +167,13 @@ namespace Tagom.Infrastructure.Migrations
                 name: "SaleItems");
 
             migrationBuilder.DropTable(
+                name: "Invoices");
+
+            migrationBuilder.DropTable(
                 name: "Products");
 
             migrationBuilder.DropTable(
-                name: "Sales");
+                name: "Customers");
 
             migrationBuilder.DropTable(
                 name: "Suppliers");
