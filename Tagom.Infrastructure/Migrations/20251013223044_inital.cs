@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Tagom.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class intail : Migration
+    public partial class inital : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,7 +18,8 @@ namespace Tagom.Infrastructure.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Phone = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Phone = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -104,31 +105,41 @@ namespace Tagom.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "SaleItems",
+                name: "Sales",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    InvoiceId = table.Column<int>(type: "int", nullable: false),
+                    SaleDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CustomerId = table.Column<int>(type: "int", nullable: false),
+                    CustomerPhone = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    InvoiceId = table.Column<int>(type: "int", nullable: true),
                     ProductId = table.Column<int>(type: "int", nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false),
-                    UnitPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    UnitPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    TotalPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_SaleItems", x => x.Id);
+                    table.PrimaryKey("PK_Sales", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_SaleItems_Invoices_InvoiceId",
+                        name: "FK_Sales_Customers_CustomerId",
+                        column: x => x.CustomerId,
+                        principalTable: "Customers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Sales_Invoices_InvoiceId",
                         column: x => x.InvoiceId,
                         principalTable: "Invoices",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_SaleItems_Products_ProductId",
+                        name: "FK_Sales_Products_ProductId",
                         column: x => x.ProductId,
                         principalTable: "Products",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -148,13 +159,18 @@ namespace Tagom.Infrastructure.Migrations
                 column: "SupplierId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SaleItems_InvoiceId",
-                table: "SaleItems",
+                name: "IX_Sales_CustomerId",
+                table: "Sales",
+                column: "CustomerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Sales_InvoiceId",
+                table: "Sales",
                 column: "InvoiceId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SaleItems_ProductId",
-                table: "SaleItems",
+                name: "IX_Sales_ProductId",
+                table: "Sales",
                 column: "ProductId");
         }
 
@@ -165,7 +181,7 @@ namespace Tagom.Infrastructure.Migrations
                 name: "Inventories");
 
             migrationBuilder.DropTable(
-                name: "SaleItems");
+                name: "Sales");
 
             migrationBuilder.DropTable(
                 name: "Invoices");

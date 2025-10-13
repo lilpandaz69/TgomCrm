@@ -12,8 +12,8 @@ using Tagom.Infrastructure.Persistence;
 namespace Tagom.Infrastructure.Migrations
 {
     [DbContext(typeof(TagomDbContext))]
-    [Migration("20251013202607_intail")]
-    partial class intail
+    [Migration("20251013223044_inital")]
+    partial class inital
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,6 +32,9 @@ namespace Tagom.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -122,7 +125,7 @@ namespace Tagom.Infrastructure.Migrations
                     b.ToTable("Products");
                 });
 
-            modelBuilder.Entity("Tagom.Domain.Entities.SaleItem", b =>
+            modelBuilder.Entity("Tagom.Domain.Entities.Sale", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -130,7 +133,14 @@ namespace Tagom.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("InvoiceId")
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CustomerPhone")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("InvoiceId")
                         .HasColumnType("int");
 
                     b.Property<int>("ProductId")
@@ -139,16 +149,24 @@ namespace Tagom.Infrastructure.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("SaleDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CustomerId");
+
                     b.HasIndex("InvoiceId");
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("SaleItems");
+                    b.ToTable("Sales");
                 });
 
             modelBuilder.Entity("Tagom.Domain.Entities.Supplier", b =>
@@ -196,7 +214,7 @@ namespace Tagom.Infrastructure.Migrations
             modelBuilder.Entity("Tagom.Domain.Entities.Product", b =>
                 {
                     b.HasOne("Tagom.Domain.Entities.Supplier", "Supplier")
-                        .WithMany("Products")
+                        .WithMany()
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -204,19 +222,26 @@ namespace Tagom.Infrastructure.Migrations
                     b.Navigation("Supplier");
                 });
 
-            modelBuilder.Entity("Tagom.Domain.Entities.SaleItem", b =>
+            modelBuilder.Entity("Tagom.Domain.Entities.Sale", b =>
                 {
+                    b.HasOne("Tagom.Domain.Entities.Customer", "Customer")
+                        .WithMany("sales")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Tagom.Domain.Entities.Invoice", "Invoice")
                         .WithMany("Items")
                         .HasForeignKey("InvoiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Tagom.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Customer");
 
                     b.Navigation("Invoice");
 
@@ -226,6 +251,8 @@ namespace Tagom.Infrastructure.Migrations
             modelBuilder.Entity("Tagom.Domain.Entities.Customer", b =>
                 {
                     b.Navigation("Invoices");
+
+                    b.Navigation("sales");
                 });
 
             modelBuilder.Entity("Tagom.Domain.Entities.Invoice", b =>
@@ -236,11 +263,6 @@ namespace Tagom.Infrastructure.Migrations
             modelBuilder.Entity("Tagom.Domain.Entities.Product", b =>
                 {
                     b.Navigation("Inventory");
-                });
-
-            modelBuilder.Entity("Tagom.Domain.Entities.Supplier", b =>
-                {
-                    b.Navigation("Products");
                 });
 #pragma warning restore 612, 618
         }

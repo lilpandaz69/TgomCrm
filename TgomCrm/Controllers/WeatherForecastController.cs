@@ -317,3 +317,312 @@ namespace TagomCrm.API.Controllers
         }
     }
 }
+// ==============================
+// ✅ SALES CONTROLLER
+// ==============================
+[ApiController]
+[Route("api/[controller]")]
+public class SalesController : ControllerBase
+{
+    private readonly TagomDbContext _db;
+
+    public SalesController(TagomDbContext db)
+    {
+        _db = db;
+    }
+
+    // ✅ GET all sales
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var sales = await _db.Sales
+            .Include(s => s.Customer)
+            .Include(s => s.Product)
+            .ThenInclude(p => p.Supplier)
+            .AsNoTracking()
+            .Select(s => new
+            {
+                s.Id,
+                s.CustomerPhone,
+                Customer = new
+                {
+                    s.Customer.Id,
+                    s.Customer.Name,
+                    s.Customer.Email,
+                    s.Customer.Phone
+                },
+                Product = new
+                {
+                    s.Product.Id,
+                    s.Product.Name,
+                    Supplier = s.Product.Supplier != null
+                        ? new { s.Product.Supplier.Id, s.Product.Supplier.Name }
+                        : null
+                },
+                s.UnitPrice,
+                s.Quantity,
+                s.TotalPrice,
+                s.SaleDate,
+                s.InvoiceId
+            })
+            .ToListAsync();
+
+        return Ok(sales);
+    }
+
+    // ✅ GET sales by customer phone
+    [HttpGet("by-customer/{phone}")]
+    public async Task<IActionResult> GetByCustomer(string phone)
+    {
+        var sales = await _db.Sales
+            .Include(s => s.Product)
+            .ThenInclude(p => p.Supplier)
+            .Include(s => s.Customer)
+            .Where(s => s.CustomerPhone == phone)
+            .AsNoTracking()
+            .Select(s => new
+            {
+                s.Id,
+                s.CustomerPhone,
+                Customer = new
+                {
+                    s.Customer.Id,
+                    s.Customer.Name,
+                    s.Customer.Email,
+                    s.Customer.Phone
+                },
+                Product = new
+                {
+                    s.Product.Id,
+                    s.Product.Name,
+                    Supplier = s.Product.Supplier != null
+                        ? new { s.Product.Supplier.Id, s.Product.Supplier.Name }
+                        : null
+                },
+                s.UnitPrice,
+                s.Quantity,
+                s.TotalPrice,
+                s.SaleDate,
+                s.InvoiceId
+            })
+            .ToListAsync();
+
+        if (!sales.Any())
+            return NotFound($"No sales found for customer phone: {phone}");
+
+        return Ok(sales);
+    }
+
+    // ✅ POST: create new sale
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] SaleDto dto)
+    {
+        // 🧠 Step 1: get customer by phone
+        var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Phone == dto.CustomerPhone);
+        if (customer == null)
+            return BadRequest("Customer not found. Please register the customer first.");
+
+        // 🧠 Step 2: get product
+        var product = await _db.Products
+            .Include(p => p.Supplier)
+            .FirstOrDefaultAsync(p => p.Id == dto.ProductId);
+        if (product == null)
+            return BadRequest("Product not found.");
+
+        // 🧠 Step 3: check stock
+        if (product.Stock < dto.Quantity)
+            return BadRequest($"Not enough stock available for product '{product.Name}'.");
+
+        // 🧠 Step 4: check or create invoice
+        var today = DateTime.UtcNow.Date;
+        var existingInvoice = await _db.Invoices
+            .FirstOrDefaultAsync(i => i.CustomerId == customer.Id && i.SaleDate.Date == today);
+
+        Invoice invoice;
+        if (existingInvoice != null)
+        {
+            invoice = existingInvoice;
+        }
+        else
+        {
+            invoice = new Invoice
+            {
+                CustomerId = customer.Id,
+                SaleDate = DateTime.UtcNow
+            };
+            _db.Invoices.Add(invoice);
+            await _db.SaveChangesAsync(); // To get Invoice ID
+        }
+
+        // 🧠 Step 5: create sale record
+        var sale = new Sale
+        {
+            CustomerPhone = dto.CustomerPhone,
+            CustomerId = customer.Id,
+            ProductId = dto.ProductId,
+            Quantity = dto.Quantity,
+            UnitPrice = product.Price,
+            TotalPrice = product.Price * dto.Quantity,
+            SaleDate = DateTime.UtcNow,
+            InvoiceId = invoice.Id
+        };
+
+        // 🧠 Step 6: update stock & inventory
+        product.Stock -= dto.Quantity;
+        var inventory = await _db.Inventories.FirstOrDefaultAsync(i => i.ProductId == product.Id);
+        if (inventory != null)
+        {
+            inventory.Quantity -= dto.Quantity;
+            if (inventory.Quantity < 0) inventory.Quantity = 0;
+        }
+
+        _db.Sales.Add(sale);
+        await _db.SaveChangesAsync();
+
+        // 🧠 Step 7: return created sale info
+        return Ok(new
+        {
+            message = "Sale created successfully!",
+            Sale = new
+            {
+                sale.Id,
+                sale.InvoiceId,
+                Customer = new
+                {
+                    customer.Id,
+                    customer.Name,
+                    customer.Email,
+                    customer.Phone
+                },
+                Product = new
+                {
+                    product.Id,
+                    product.Name,
+                    Supplier = product.Supplier != null
+                        ? new { product.Supplier.Id, product.Supplier.Name }
+                        : null
+                },
+                sale.UnitPrice,
+                sale.Quantity,
+                sale.TotalPrice,
+                sale.SaleDate
+            }
+        });
+    }
+}
+
+// ==============================
+// ✅ Customer CONTROLLER
+// ==============================
+[ApiController]
+[Route("api/[controller]")]
+public class CustomersController : ControllerBase
+{
+    private readonly TagomDbContext _db;
+    public CustomersController(TagomDbContext db) => _db = db;
+
+    // ✅ GET: api/customers/by-phone/{phone}
+    [HttpGet("by-phone/{phone}")]
+    public async Task<IActionResult> GetByPhone(string phone)
+    {
+        var customer = await _db.Customers
+            .Where(c => c.Phone == phone)
+            .Select(c => new CustomerDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Phone = c.Phone,
+                Email = c.Email
+            })
+            .FirstOrDefaultAsync();
+
+        if (customer == null)
+            return NotFound($"No customer found with phone number: {phone}");
+
+        return Ok(customer);
+    }
+
+    // ✅ POST: api/customers
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] CustomerDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            return BadRequest("Name is required.");
+
+        var customer = new Customer
+        {
+            Name = dto.Name,
+            Phone = dto.Phone,
+            Email = dto.Email
+        };
+
+        _db.Customers.Add(customer);
+        await _db.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetByPhone), new { phone = customer.Phone }, dto);
+    }
+}
+
+// ==============================
+// ✅ Invoices CONTROLLER 
+// ==============================
+
+[ApiController]
+[Route("api/[controller]")]
+public class InvoicesController : ControllerBase
+{
+    private readonly TagomDbContext _db;
+    public InvoicesController(TagomDbContext db) => _db = db;
+
+    // ✅ GET: api/invoices/by-sale/1
+    [HttpGet("by-sale/{saleId}")]
+    public async Task<IActionResult> GetBySaleId(int saleId)
+    {
+        var sale = await _db.Sales
+            .Include(s => s.Customer)
+            .Include(s => s.Product)
+                .ThenInclude(p => p.Supplier)
+            .Include(s => s.Invoice)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == saleId);
+
+        if (sale == null)
+            return NotFound($"❌ No sale found with ID {saleId}.");
+
+        return Ok(new
+        {
+            SaleId = sale.Id,
+            SaleDate = sale.SaleDate,
+            Customer = new
+            {
+                sale.Customer.Id,
+                sale.Customer.Name,
+                sale.Customer.Phone,
+                sale.Customer.Email
+            },
+            Product = new
+            {
+                sale.Product.Id,
+                sale.Product.Name,
+                Supplier = sale.Product.Supplier != null ? new
+                {
+                    sale.Product.Supplier.Id,
+                    sale.Product.Supplier.Name
+                } : null
+            },
+            sale.Quantity,
+            sale.UnitPrice,
+            sale.TotalPrice,
+            Invoice = sale.Invoice != null ? new
+            {
+                sale.Invoice.Id,
+                sale.Invoice.SaleDate
+            } : null
+        });
+    }
+}
+
+
+
+
+
