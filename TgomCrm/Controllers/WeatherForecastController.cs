@@ -129,13 +129,19 @@ namespace TagomCrm.API.Controllers
             string? imagePath = null;
 
             // Handle image upload
+            // ✅ Handle image upload safely
             if (dto.ImageFile != null)
             {
-                var uploadsFolder = Path.Combine(_env.WebRootPath ?? "wwwroot", "images");
+                // Use a safe fallback for WebRootPath
+                var uploadsFolder = Path.Combine(
+                    _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"),
+                    "images"
+                );
+
                 if (!Directory.Exists(uploadsFolder))
                     Directory.CreateDirectory(uploadsFolder);
 
-                var fileName = $"{Guid.NewGuid()}_{dto.ImageFile.FileName}";
+                var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(dto.ImageFile.FileName)}";
                 var filePath = Path.Combine(uploadsFolder, fileName);
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
@@ -145,6 +151,7 @@ namespace TagomCrm.API.Controllers
 
                 imagePath = $"/images/{fileName}";
             }
+
 
             if (existingProduct != null)
             {
