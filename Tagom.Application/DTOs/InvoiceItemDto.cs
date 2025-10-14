@@ -11,6 +11,7 @@
 
     public class InvoiceDto
     {
+        public int InvoiceId { get; set; }
         public int OrderNumber { get; set; }
         public string CustomerName { get; set; } = null!;
         public string? CustomerPhone { get; set; }

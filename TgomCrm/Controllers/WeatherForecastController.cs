@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Hosting;
 using Tagom.Domain.Entities;
 using Tagom.Infrastructure.Persistence;
 using Tagom.Application.DTOs;
@@ -21,7 +22,7 @@ namespace TagomCrm.API.Controllers
         {
             var suppliers = await _db.Suppliers
                 .AsNoTracking()
-                .Select(s => new { s.Id, s.Name, s.Phone })
+                .Select(s => new { s.SupplierId, s.Name, s.Phone })
                 .ToListAsync();
             return Ok(suppliers);
         }
@@ -31,8 +32,8 @@ namespace TagomCrm.API.Controllers
         {
             var supplier = await _db.Suppliers
                 .AsNoTracking()
-                .Where(s => s.Id == id)
-                .Select(s => new { s.Id, s.Name, s.Phone })
+                .Where(s => s.SupplierId == id)
+                .Select(s => new { s.SupplierId, s.Name, s.Phone })
                 .FirstOrDefaultAsync();
 
             if (supplier == null)
@@ -50,7 +51,7 @@ namespace TagomCrm.API.Controllers
             _db.Suppliers.Add(s);
             await _db.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = s.Id }, new { s.Id, s.Name, s.Phone });
+            return CreatedAtAction(nameof(GetById), new { id = s.SupplierId }, new { s.SupplierId, s.Name, s.Phone });
         }
     }
 
@@ -78,13 +79,13 @@ namespace TagomCrm.API.Controllers
                 .AsNoTracking()
                 .Select(p => new
                 {
-                    p.Id,
+                    p.ProductId,
                     p.Name,
                     p.Price,
                     p.Category,
                     p.Stock,
                     p.ImageUrl,
-                    Supplier = new { p.Supplier.Id, p.Supplier.Name }
+                    Supplier = new { p.Supplier.SupplierId, p.Supplier.Name }
                 })
                 .ToListAsync();
             return Ok(products);
@@ -96,16 +97,16 @@ namespace TagomCrm.API.Controllers
             var product = await _db.Products
                 .Include(p => p.Supplier)
                 .AsNoTracking()
-                .Where(p => p.Id == id)
+                .Where(p => p.ProductId == id)
                 .Select(p => new
                 {
-                    p.Id,
+                    p.ProductId,
                     p.Name,
                     p.Price,
                     p.Category,
                     p.Stock,
                     p.ImageUrl,
-                    Supplier = new { p.Supplier.Id, p.Supplier.Name }
+                    Supplier = new { p.Supplier.SupplierId, p.Supplier.Name }
                 })
                 .FirstOrDefaultAsync();
 
@@ -128,11 +129,9 @@ namespace TagomCrm.API.Controllers
 
             string? imagePath = null;
 
-            // Handle image upload
-            // ✅ Handle image upload safely
+            // 🖼️ Handle image upload
             if (dto.ImageFile != null)
             {
-                // Use a safe fallback for WebRootPath
                 var uploadsFolder = Path.Combine(
                     _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"),
                     "images"
@@ -152,7 +151,6 @@ namespace TagomCrm.API.Controllers
                 imagePath = $"/images/{fileName}";
             }
 
-
             if (existingProduct != null)
             {
                 existingProduct.Stock += dto.Stock;
@@ -163,7 +161,7 @@ namespace TagomCrm.API.Controllers
                     existingProduct.ImageUrl = imagePath;
 
                 if (existingProduct.Inventory == null)
-                    existingProduct.Inventory = new Inventory { ProductId = existingProduct.Id, Quantity = existingProduct.Stock };
+                    existingProduct.Inventory = new Inventory { ProductId = existingProduct.ProductId, Quantity = existingProduct.Stock };
                 else
                     existingProduct.Inventory.Quantity += dto.Stock;
 
@@ -174,13 +172,14 @@ namespace TagomCrm.API.Controllers
                     message = $"Stock updated for existing product '{existingProduct.Name}'.",
                     product = new
                     {
-                        existingProduct.Id,
+                        existingProduct.ProductId,
                         existingProduct.Name,
                         existingProduct.Stock,
                         existingProduct.Price,
+                        existingProduct.Orignailprice,
                         existingProduct.Category,
                         existingProduct.ImageUrl,
-                        Supplier = new { supplier.Id, supplier.Name }
+                        Supplier = new { supplier.SupplierId, supplier.Name }
                     }
                 });
             }
@@ -189,6 +188,7 @@ namespace TagomCrm.API.Controllers
             {
                 Name = dto.Name,
                 Price = dto.Price,
+                Orignailprice = dto.Orignailprice,
                 Category = dto.Category,
                 Stock = dto.Stock,
                 SupplierId = dto.SupplierId,
@@ -199,18 +199,19 @@ namespace TagomCrm.API.Controllers
             _db.Products.Add(product);
             await _db.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = product.Id }, new
+            return CreatedAtAction(nameof(GetById), new { id = product.ProductId }, new
             {
                 message = "New product created successfully with inventory record.",
                 product = new
                 {
-                    product.Id,
+                    product.ProductId,
                     product.Name,
                     product.Price,
+                    product.Orignailprice,
                     product.Category,
                     product.Stock,
                     product.ImageUrl,
-                    Supplier = new { supplier.Id, supplier.Name }
+                    Supplier = new { supplier.SupplierId, supplier.Name }
                 }
             });
         }
@@ -237,15 +238,15 @@ namespace TagomCrm.API.Controllers
                 .Select(categoryGroup => new
                 {
                     Category = categoryGroup.Key,
-                    Products = categoryGroup.GroupBy(x => new { x.Product.Id, x.Product.Name })
+                    Products = categoryGroup.GroupBy(x => new { x.Product.ProductId, x.Product.Name })
                         .Select(productGroup => new
                         {
-                            ProductId = productGroup.Key.Id,
+                            ProductId = productGroup.Key.ProductId,
                             ProductName = productGroup.Key.Name,
                             TotalStock = productGroup.Sum(x => x.Quantity),
                             Suppliers = productGroup.Select(x => new
                             {
-                                SupplierId = x.Product.Supplier.Id,
+                                SupplierId = x.Product.Supplier.SupplierId,
                                 SupplierName = x.Product.Supplier.Name,
                                 StockFromSupplier = x.Quantity
                             }).ToList()
@@ -255,65 +256,316 @@ namespace TagomCrm.API.Controllers
 
             return Ok(inventoryData);
         }
+    }
 
-        [HttpPost("increase/{productId}")]
-        public async Task<IActionResult> IncreaseStock(int productId, [FromQuery] int amount)
+    // ==============================
+    // ✅ SALES CONTROLLER (with Return Feature)
+    // ==============================
+    [ApiController]
+    [Route("api/[controller]")]
+    public class SalesController : ControllerBase
+    {
+        private readonly TagomDbContext _db;
+        public SalesController(TagomDbContext db) => _db = db;
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
         {
-            if (amount <= 0) return BadRequest("Increase amount must be greater than 0.");
+            var sales = await _db.Sales
+                .Include(s => s.Customer)
+                .Include(s => s.Product)
+                .ThenInclude(p => p.Supplier)
+                .AsNoTracking()
+                .Select(s => new
+                {
+                    s.SaleId,
+                    s.CustomerPhone,
+                    Customer = new
+                    {
+                        s.Customer.CustomerId,
+                        s.Customer.Name,
+                        s.Customer.Email,
+                        s.Customer.Phone
+                    },
+                    Product = new
+                    {
+                        s.Product.ProductId,
+                        s.Product.Name,
+                        Supplier = s.Product.Supplier != null
+                            ? new { s.Product.Supplier.SupplierId, s.Product.Supplier.Name }
+                            : null
+                    },
+                    s.UnitPrice,
+                    s.Quantity,
+                    s.TotalPrice,
+                    s.SaleDate,
+                    s.InvoiceId,
+                    s.IsReturned,
+                    s.ReturnReason
+                })
+                .ToListAsync();
 
-            var product = await _db.Products.FindAsync(productId);
-            if (product == null) return NotFound($"Product with ID {productId} not found.");
+            return Ok(sales);
+        }
 
-            var inventory = await _db.Inventories.FirstOrDefaultAsync(i => i.ProductId == productId);
-            if (inventory == null)
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] SaleDto dto)
+        {
+            var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Phone == dto.CustomerPhone);
+            if (customer == null)
+                return BadRequest("Customer not found.");
+
+            var product = await _db.Products.Include(p => p.Supplier)
+                .FirstOrDefaultAsync(p => p.ProductId == dto.ProductId);
+            if (product == null)
+                return BadRequest("Product not found.");
+
+            if (product.Stock < dto.Quantity)
+                return BadRequest($"Not enough stock for '{product.Name}'.");
+
+            var invoice = new Invoice { CustomerId = customer.CustomerId, SaleDate = DateTime.UtcNow };
+            _db.Invoices.Add(invoice);
+            await _db.SaveChangesAsync();
+
+            var sale = new Sale
             {
-                inventory = new Inventory { ProductId = productId, Quantity = amount };
-                _db.Inventories.Add(inventory);
-            }
-            else
+                CustomerPhone = dto.CustomerPhone,
+                CustomerId = customer.CustomerId,
+                ProductId = dto.ProductId,
+                Quantity = dto.Quantity,
+                UnitPrice = product.Price,
+                TotalPrice = product.Price * dto.Quantity,
+                SaleDate = DateTime.UtcNow,
+                InvoiceId = invoice.InvoiceId,
+                IsReturned = false
+            };
+
+            product.Stock -= dto.Quantity;
+            var inventory = await _db.Inventories.FirstOrDefaultAsync(i => i.ProductId == product.ProductId);
+            if (inventory != null)
             {
-                inventory.AddStock(amount);
+                inventory.Quantity -= dto.Quantity;
             }
 
-            product.Stock += amount;
+            _db.Sales.Add(sale);
             await _db.SaveChangesAsync();
 
             return Ok(new
             {
-                message = $"Increased stock for '{product.Name}' by {amount}.",
-                inventory = new { product.Id, product.Name, inventory.Quantity }
+                message = "Sale created successfully!",
+                sale.SaleId,
+                sale.InvoiceId,
+                sale.TotalPrice
             });
         }
 
-        [HttpPost("decrease/{productId}")]
-        public async Task<IActionResult> DecreaseStock(int productId, [FromQuery] int amount)
+        // ✅ RETURN SALE (REGURGITATION)
+        [HttpPost("return/{saleId}")]
+        public async Task<IActionResult> ReturnSale(int saleId, [FromBody] ReturnDto dto)
         {
-            if (amount <= 0) return BadRequest("Decrease amount must be greater than 0.");
+            var sale = await _db.Sales
+                .Include(s => s.Product)
+                .Include(s => s.Customer)
+                .FirstOrDefaultAsync(s => s.SaleId == saleId);
 
-            var product = await _db.Products.FindAsync(productId);
-            if (product == null) return NotFound($"Product with ID {productId} not found.");
+            if (sale == null)
+                return NotFound($"Sale with ID {saleId} not found.");
 
-            var inventory = await _db.Inventories.FirstOrDefaultAsync(i => i.ProductId == productId);
-            if (inventory == null) return NotFound("Inventory record not found for this product.");
+            if (sale.IsReturned)
+                return BadRequest("This sale has already been returned.");
 
-            try
+            sale.IsReturned = true;
+            sale.ReturnReason = dto.ReturnReason ?? "No reason provided";
+
+            sale.Product.Stock += sale.Quantity;
+            var inventory = await _db.Inventories.FirstOrDefaultAsync(i => i.ProductId == sale.ProductId);
+            if (inventory != null)
             {
-                inventory.RemoveStock(amount);
-                product.Stock -= amount;
-                if (product.Stock < 0) product.Stock = 0;
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
+                inventory.Quantity += sale.Quantity;
             }
 
             await _db.SaveChangesAsync();
 
             return Ok(new
             {
-                message = $"Decreased stock for '{product.Name}' by {amount}.",
-                inventory = new { product.Id, product.Name, inventory.Quantity }
+                message = $"Product '{sale.Product.Name}' has been returned successfully.",
+                ReturnReason = sale.ReturnReason
             });
         }
+    }
+
+    // ==============================
+    // ✅ CUSTOMERS CONTROLLER
+    // ==============================
+    [ApiController]
+    [Route("api/[controller]")]
+    public class CustomersController : ControllerBase
+    {
+        private readonly TagomDbContext _db;
+        public CustomersController(TagomDbContext db) => _db = db;
+
+        [HttpGet("by-phone/{phone}")]
+        public async Task<IActionResult> GetByPhone(string phone)
+        {
+            var customer = await _db.Customers
+                .Where(c => c.Phone == phone)
+                .Select(c => new CustomerDto
+                {
+                    CustomerId = c.CustomerId,
+                    Name = c.Name,
+                    Phone = c.Phone,
+                    Email = c.Email
+                })
+                .FirstOrDefaultAsync();
+
+            if (customer == null)
+                return NotFound($"No customer found with phone number: {phone}");
+
+            return Ok(customer);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CustomerDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Name))
+                return BadRequest("Name is required.");
+
+            var customer = new Customer
+            {
+                Name = dto.Name,
+                Phone = dto.Phone,
+                Email = dto.Email
+            };
+
+            _db.Customers.Add(customer);
+            await _db.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetByPhone), new { phone = customer.Phone }, dto);
+        }
+    }
+
+    // ==============================
+    // ✅ INVOICES CONTROLLER
+    // ==============================
+    [ApiController]
+    [Route("api/[controller]")]
+    public class InvoicesController : ControllerBase
+    {
+        private readonly TagomDbContext _db;
+        public InvoicesController(TagomDbContext db) => _db = db;
+
+        [HttpGet("by-sale/{saleId}")]
+        public async Task<IActionResult> GetBySaleId(int saleId)
+        {
+            var sale = await _db.Sales
+                .Include(s => s.Customer)
+                .Include(s => s.Product)
+                .ThenInclude(p => p.Supplier)
+                .Include(s => s.Invoice)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.SaleId == saleId);
+
+            if (sale == null)
+                return NotFound($"❌ No sale found with ID {saleId}.");
+
+            return Ok(new
+            {
+                SaleId = sale.SaleId,
+                SaleDate = sale.SaleDate,
+                Customer = new
+                {
+                    sale.Customer.CustomerId,
+                    sale.Customer.Name,
+                    sale.Customer.Phone,
+                    sale.Customer.Email
+                },
+                Product = new
+                {
+                    sale.Product.ProductId,
+                    sale.Product.Name,
+                    Supplier = sale.Product.Supplier != null
+                        ? new { sale.Product.Supplier.SupplierId, sale.Product.Supplier.Name }
+                        : null
+                },
+                sale.Quantity,
+                sale.UnitPrice,
+                sale.TotalPrice,
+                Invoice = sale.Invoice != null
+                    ? new { sale.Invoice.InvoiceId, sale.Invoice.SaleDate }
+                    : null
+            });
+        }
+
+  
+        [HttpGet("overview/{supplierId}/{productId}")]
+        public async Task<IActionResult> GetSupplierProductOverview(int supplierId, int productId)
+        {
+            var supplier = await _db.Suppliers
+                .AsNoTracking()
+                .Where(s => s.SupplierId == supplierId)
+                .Select(s => new { s.SupplierId, s.Name, s.Phone })
+                .FirstOrDefaultAsync();
+
+            if (supplier == null)
+                return NotFound($"Supplier with ID {supplierId} not found.");
+
+            var product = await _db.Products
+                .AsNoTracking()
+                .Where(p => p.SupplierId == supplierId && p.ProductId == productId)
+                .Select(p => new
+                {
+                    p.ProductId,
+                    p.Name,
+                    p.Orignailprice,
+                    p.Category,
+                    p.Stock
+                })
+                .FirstOrDefaultAsync();
+
+            if (product == null)
+                return NotFound($"Product with ID {productId} not found for this supplier.");
+
+            var inventory = await _db.Inventories
+                .Include(i => i.Product)
+                .AsNoTracking()
+                .Where(i => i.Product.SupplierId == supplierId && i.ProductId == productId)
+                .Select(i => new
+                {
+                    i.ProductId,
+                    ProductName = i.Product.Name,
+                    QuantityInInventory = i.Quantity,
+                    Price = i.Product.Orignailprice,
+                    Category = i.Product.Category,
+                    TotalPrice = i.Quantity * i.Product.Orignailprice
+                })
+                .FirstOrDefaultAsync();
+
+            // 🕓 توقيت مصر
+            var egyptTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
+            var egyptTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, egyptTimeZone);
+
+            // ==== هنا نحفظ فاتورة بسيطة (نخزن SupplierId + InvoiceDate + مبالغ صفرية)
+            var invoice = new SupplierInvoice
+            {
+                SupplierId = supplierId,
+                InvoiceDate = egyptTime,
+                SubTotal = 0m,
+                TotalAmount = 0m
+            };
+
+            _db.SupplierInvoices.Add(invoice);
+            await _db.SaveChangesAsync(); // بعد الحفظ الـ invoice.SupplierInvoiceId هيتعبى تلقائياً
+
+            // ==== نرجع الـ response مع الـ SupplierInvoiceId اللي اتخزن
+            return Ok(new
+            {
+                Supplier = supplier,
+                Product = product,
+                Inventory = inventory,
+                InvoiceDate = egyptTime,
+                SupplierInvoiceId = invoice.SupplierInvoiceId
+            });
+        }
+
     }
 }
