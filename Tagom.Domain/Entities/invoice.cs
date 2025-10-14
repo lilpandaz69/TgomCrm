@@ -2,7 +2,7 @@
 {
     public class Invoice
     {
-        public int Id { get; set; } 
+        public int InvoiceId { get; set; } 
         public DateTime SaleDate { get; set; } = DateTime.UtcNow;
 
         public int CustomerId { get; set; }

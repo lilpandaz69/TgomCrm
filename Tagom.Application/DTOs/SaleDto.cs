@@ -9,6 +9,7 @@ namespace Tagom.Application.DTOs
 {
     public class SaleDto
     {
+        public int SaleId { get; set; }
         public string CustomerPhone { get; set; }
 
         public int ProductId { get; set; }
