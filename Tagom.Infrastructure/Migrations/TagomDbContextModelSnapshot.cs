@@ -106,6 +106,9 @@ namespace Tagom.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal>("Orignailprice")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
@@ -192,6 +195,62 @@ namespace Tagom.Infrastructure.Migrations
                     b.ToTable("Suppliers");
                 });
 
+            modelBuilder.Entity("Tagom.Domain.Entities.SupplierInvoice", b =>
+                {
+                    b.Property<int>("SupplierInvoiceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SupplierInvoiceId"));
+
+                    b.Property<DateTime>("InvoiceDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("SubTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("SupplierId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("SupplierInvoiceId");
+
+                    b.HasIndex("SupplierId");
+
+                    b.ToTable("SupplierInvoices");
+                });
+
+            modelBuilder.Entity("Tagom.Domain.Entities.SupplierInvoiceItem", b =>
+                {
+                    b.Property<int>("SupplierInvoiceItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SupplierInvoiceItemId"));
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SupplierInvoiceId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("SupplierInvoiceItemId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("SupplierInvoiceId");
+
+                    b.ToTable("SupplierInvoiceItem");
+                });
+
             modelBuilder.Entity("Tagom.Domain.Entities.Inventory", b =>
                 {
                     b.HasOne("Tagom.Domain.Entities.Product", "Product")
@@ -251,6 +310,36 @@ namespace Tagom.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Tagom.Domain.Entities.SupplierInvoice", b =>
+                {
+                    b.HasOne("Tagom.Domain.Entities.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Supplier");
+                });
+
+            modelBuilder.Entity("Tagom.Domain.Entities.SupplierInvoiceItem", b =>
+                {
+                    b.HasOne("Tagom.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Tagom.Domain.Entities.SupplierInvoice", "SupplierInvoice")
+                        .WithMany("Items")
+                        .HasForeignKey("SupplierInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("SupplierInvoice");
+                });
+
             modelBuilder.Entity("Tagom.Domain.Entities.Customer", b =>
                 {
                     b.Navigation("Invoices");
@@ -266,6 +355,11 @@ namespace Tagom.Infrastructure.Migrations
             modelBuilder.Entity("Tagom.Domain.Entities.Product", b =>
                 {
                     b.Navigation("Inventory");
+                });
+
+            modelBuilder.Entity("Tagom.Domain.Entities.SupplierInvoice", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

@@ -26,6 +26,24 @@ namespace Tagom.Infrastructure.Persistence
                 .WithMany()
                 .HasForeignKey(s => s.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<SupplierInvoice>()
+                .HasOne(si => si.Supplier)
+                .WithMany()
+                .HasForeignKey(si => si.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SupplierInvoiceItem>()
+                .HasOne(i => i.SupplierInvoice)
+                .WithMany(si => si.Items)
+                .HasForeignKey(i => i.SupplierInvoiceId);
+
+            modelBuilder.Entity<SupplierInvoiceItem>()
+                .HasOne(i => i.Product)
+                .WithMany() 
+                .HasForeignKey(i => i.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
         public DbSet<Customer> Customers { get; set; } = null!;
@@ -34,6 +52,7 @@ namespace Tagom.Infrastructure.Persistence
         public DbSet<Inventory> Inventories { get; set; } = null!;
         public DbSet<Invoice> Invoices { get; set; } = null!;
         public DbSet <Sale> Sales { get; set; } = null!;
+        public DbSet<SupplierInvoice> SupplierInvoices { get; set; }
 
         public TagomDbContext(DbContextOptions<TagomDbContext> options) : base(options)
         {

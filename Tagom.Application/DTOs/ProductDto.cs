@@ -13,5 +13,6 @@ namespace Tagom.Application.DTOs
 
         // New property for file upload
         public IFormFile? ImageFile { get; set; }
+        public decimal Orignailprice { get; set; }
     }
 }
