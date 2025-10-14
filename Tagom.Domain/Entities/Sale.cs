@@ -27,6 +27,8 @@ namespace Tagom.Domain.Entities
         public decimal UnitPrice { get; set; }
         public decimal TotalPrice { get; set; }
 
+        public bool IsReturned { get; set; } = false;
+        public string? ReturnReason { get; set; } 
 
         public decimal Subtotal => Quantity * UnitPrice;
 

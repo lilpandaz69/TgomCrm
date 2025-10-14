@@ -140,11 +140,17 @@ namespace Tagom.Infrastructure.Migrations
                     b.Property<int?>("InvoiceId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsReturned")
+                        .HasColumnType("bit");
+
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
+
+                    b.Property<string>("ReturnReason")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("SaleDate")
                         .HasColumnType("datetime2");

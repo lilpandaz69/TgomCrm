@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Tagom.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class initalproject : Migration
+    public partial class intial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -117,7 +117,9 @@ namespace Tagom.Infrastructure.Migrations
                     ProductId = table.Column<int>(type: "int", nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false),
                     UnitPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    TotalPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    TotalPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    IsReturned = table.Column<bool>(type: "bit", nullable: false),
+                    ReturnReason = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {

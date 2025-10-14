@@ -12,8 +12,8 @@ using Tagom.Infrastructure.Persistence;
 namespace Tagom.Infrastructure.Migrations
 {
     [DbContext(typeof(TagomDbContext))]
-    [Migration("20251014173833_initalproject")]
-    partial class initalproject
+    [Migration("20251014183536_intial")]
+    partial class intial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -143,11 +143,17 @@ namespace Tagom.Infrastructure.Migrations
                     b.Property<int?>("InvoiceId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsReturned")
+                        .HasColumnType("bit");
+
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
+
+                    b.Property<string>("ReturnReason")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("SaleDate")
                         .HasColumnType("datetime2");
