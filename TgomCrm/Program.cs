@@ -7,11 +7,23 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// 🔹 أضف الـ Session
+// ✅ Enable CORS (to allow Angular app to connect)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200") // Angular dev server
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+// 🔹 Add Session
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // مدة الجلسة
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Session duration
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
@@ -42,7 +54,13 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseSession(); 
+// ✅ Enable HTTPS redirect (optional but good)
+app.UseHttpsRedirection();
+
+// ✅ Add CORS before Authentication/Authorization
+app.UseCors("AllowAngular");
+
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 

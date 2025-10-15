@@ -12,8 +12,8 @@ using Tagom.Infrastructure.Persistence;
 namespace Tagom.Infrastructure.Migrations
 {
     [DbContext(typeof(TagomDbContext))]
-    [Migration("20251015120353_initalproject")]
-    partial class initalproject
+    [Migration("20251015144010_intail")]
+    partial class intail
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
