@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Hosting;
 using Tagom.Domain.Entities;
 using Tagom.Infrastructure.Persistence;
 using Tagom.Application.DTOs;
@@ -14,6 +13,24 @@ namespace TgomCrm.API.Controllers
         private readonly TagomDbContext _db;
         public CustomersController(TagomDbContext db) => _db = db;
 
+        // ✅ GET api/customers
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var customers = await _db.Customers
+                .Select(c => new CustomerDto
+                {
+                    CustomerId = c.CustomerId,
+                    Name = c.Name,
+                    Phone = c.Phone,
+                    Email = c.Email
+                })
+                .ToListAsync();
+
+            return Ok(customers);
+        }
+
+        // ✅ GET api/customers/by-phone/{phone}
         [HttpGet("by-phone/{phone}")]
         public async Task<IActionResult> GetByPhone(string phone)
         {
@@ -34,6 +51,7 @@ namespace TgomCrm.API.Controllers
             return Ok(customer);
         }
 
+        // ✅ POST api/customers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CustomerDto dto)
         {
