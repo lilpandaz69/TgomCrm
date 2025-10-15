@@ -8,18 +8,38 @@
   <div class="login-box">
     <h2>Welcome back</h2>
 
-    <form>
+    <form (ngSubmit)="onLogin()">
       <div class="input-group">
-        <label for="fullname">Full Name</label>
-        <input type="text" id="fullname" name="fullname" placeholder="Enter your name" />
+        <label for="fullname">User Name</label>
+        <input
+          type="text"
+          id="fullname"
+          name="fullname"
+          [(ngModel)]="username"
+          required
+          placeholder="Enter your User Name"
+        />
       </div>
 
       <div class="input-group">
         <label for="password">Password</label>
-        <input type="password" id="password" name="password" placeholder="Enter your password" />
+        <input
+          type="password"
+          id="password"
+          name="password"
+          [(ngModel)]="password"
+          required
+          placeholder="Enter your password"
+        />
       </div>
 
-      <button type="submit" class="login-btn">Login</button>
+      <button type="submit" class="login-btn" [disabled]="loading">
+        {{ loading ? 'Logging in...' : 'Login' }}
+      </button>
+
+      <p *ngIf="errorMessage" style="color: red; margin-top: 10px;">
+        {{ errorMessage }}
+      </p>
     </form>
   </div>
 </div>

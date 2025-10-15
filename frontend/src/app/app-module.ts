@@ -6,19 +6,19 @@ import { FormsModule } from '@angular/forms';
 import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
 import { Dashboard } from './dashboard/dashboard';
-import { Login } from './login/login';
+import { LoginComponent } from './login/login';
 
 @NgModule({
   declarations: [
     App,
     Dashboard,
-    Login
+    LoginComponent,
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
-    HttpClientModule,   // ضروري للـ API calls
-    FormsModule         // لو عندك [(ngModel)] في login وغيره
+    HttpClientModule,
+    FormsModule
   ],
   providers: [
     provideBrowserGlobalErrorListeners(),

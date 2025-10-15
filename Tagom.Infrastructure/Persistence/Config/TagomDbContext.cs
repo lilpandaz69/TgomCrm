@@ -53,6 +53,7 @@ namespace Tagom.Infrastructure.Persistence
         public DbSet<Invoice> Invoices { get; set; } = null!;
         public DbSet <Sale> Sales { get; set; } = null!;
         public DbSet<SupplierInvoice> SupplierInvoices { get; set; }
+        public DbSet<User> Users { get; set; } = null!;
 
         public TagomDbContext(DbContextOptions<TagomDbContext> options) : base(options)
         {
