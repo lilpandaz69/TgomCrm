@@ -16,11 +16,11 @@
     </nav>
 
     <div class="profile">
-      <img src="assets/raw.png" alt="User" class="profile-img" />
-      <div class="profile-info">
-        <h4>malak jackop</h4>
-        <p>Project Manager</p>
-      </div>
+  <img src="assets/raw.png" alt="User" class="profile-img" />
+  <div class="profile-info">
+    <h4>{{ username || 'Guest' }}</h4>
+    <p>{{ role || 'Project Manager' }}</p>
+  </div>
     </div>
   </aside>
 
