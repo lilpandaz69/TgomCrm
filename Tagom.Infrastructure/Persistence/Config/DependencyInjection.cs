@@ -10,7 +10,7 @@ namespace Tagom.Infrastructure
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
         {
             var cs = config.GetConnectionString("DefaultConnection")
-                     ?? "Server=PANDA\\SQLEXPRESS;Database=TagomCrm;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
+                     ?? "Server=localhost;Database=TagomCrm;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
 
             services.AddDbContext<TagomDbContext>(opt => opt.UseSqlServer(cs));
 
