@@ -2,10 +2,11 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-login',
-  standalone:false,
+  standalone: false,
   templateUrl: './login.html',
   styleUrls: ['./login.css']
 })
@@ -15,7 +16,11 @@ export class LoginComponent {
   loading = false;
   errorMessage = '';
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    private authService: AuthService
+  ) {}
 
   onLogin() {
     if (!this.username || !this.password) {
@@ -26,25 +31,13 @@ export class LoginComponent {
     this.loading = true;
     this.errorMessage = '';
 
-    const body = {
-      username: this.username,
-      password: this.password
-    };
+    const body = { username: this.username, password: this.password };
 
-    this.http.post<any>(`${environment.apiBaseUrl}/api/Auth/login`, body)
+    this.http.post<any>(`${environment.apiBaseUrl}/api/Auth/login`, body, { withCredentials: true })
       .subscribe({
         next: (res) => {
-          // ✅ Save token and role
-          localStorage.setItem('token', res.token);
-          localStorage.setItem('role', res.role);
-          localStorage.setItem('username', this.username);
-
-          // ✅ Redirect based on role
-          if (res.role === 'Owner') {
-            this.router.navigate(['/dashboard']);
-          } else {
-            this.router.navigate(['/dashboard']);
-          }
+          this.authService.setUser(res.role);
+          this.router.navigate(['/dashboard']);
         },
         error: (err) => {
           this.loading = false;
@@ -54,9 +47,7 @@ export class LoginComponent {
             this.errorMessage = 'An error occurred. Please try again.';
           }
         },
-        complete: () => {
-          this.loading = false;
-        }
+        complete: () => this.loading = false
       });
   }
 }

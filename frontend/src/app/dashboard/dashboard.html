@@ -3,7 +3,7 @@
   <aside class="sidebar">
     <!-- ✅ Logo Section -->
     <div class="logo">
-    <img src="assets/Tagomlogo.png" alt="TAGOM Logo" class="logo-img" />
+      <img src="assets/Tagomlogo.png" alt="TAGOM Logo" class="logo-img" />
       <p class="version">TAGOM v.01</p>
     </div>
 
@@ -16,17 +16,32 @@
     </nav>
 
     <div class="profile">
-  <img src="assets/raw.png" alt="User" class="profile-img" />
-  <div class="profile-info">
-    <h4>{{ username || 'Guest' }}</h4>
-    <p>{{ role || 'Project Manager' }}</p>
-  </div>
+      <img src="assets/raw.png" alt="User" class="profile-img" />
+      <div class="profile-info">
+        <h4>
+          <ng-container *ngIf="role?.toLowerCase() === 'owner'; else staffName">
+            Mr Samir
+          </ng-container>
+          <ng-template #staffName>
+            Staff
+          </ng-template>
+        </h4>
+        <p>{{ role  }}</p>
+      </div>
+      <button class="logout-btn" (click)="logout()">Logout</button>
     </div>
   </aside>
 
   <!-- Main Content -->
   <main class="main-content">
-    <h2 class="welcome">Hello Mr Samir 👋,</h2>
+    <h2 class="welcome">
+      <ng-container *ngIf="role === 'Owner'; else staffGreeting">
+        Hello Mr Samir 👋,
+      </ng-container>
+      <ng-template #staffGreeting>
+          Hello Staff 👋,
+        </ng-template>
+      </h2>
 
     <div class="cards-grid">
       <div class="card">
@@ -55,3 +70,4 @@
     </div>
   </main>
 </div>
+

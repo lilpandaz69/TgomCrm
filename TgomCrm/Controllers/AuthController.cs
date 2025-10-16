@@ -17,6 +17,7 @@ namespace Tagom.API.Controllers
             _config = config;
         }
 
+        // ✅ LOGIN
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
         {
@@ -29,41 +30,70 @@ namespace Tagom.API.Controllers
             else
                 return Unauthorized(new { message = "Authentication failed: invalid username or password." });
 
+            // Generate JWT
             var token = GenerateToken(request.Username, role);
 
-            
+            // ✅ Save in server-side session
             HttpContext.Session.SetString("JwtToken", token);
             HttpContext.Session.SetString("Username", request.Username);
             HttpContext.Session.SetString("Role", role);
 
+            // ✅ Also set cookie for persistence (so Angular can restore session)
+            Response.Cookies.Append("AuthToken", token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,              // set to false if testing locally without HTTPS
+                SameSite = SameSiteMode.None, // required for cross-origin cookies
+                Expires = DateTime.UtcNow.AddHours(1)
+            });
+
             return Ok(new
             {
                 Message = "Login successful",
-                Token = token,
                 Role = role
             });
         }
 
-        [HttpPost("logout")]
-        public IActionResult Logout()
-        {
-            
-            HttpContext.Session.Clear();
-            return Ok(new { Message = "Logged out successfully" });
-        }
-
-        [HttpGet("check-session")]
-        public IActionResult CheckSession()
+        // ✅ CHECK CURRENT USER SESSION (for page reload)
+        [HttpGet("me")]
+        public IActionResult Me()
         {
             var username = HttpContext.Session.GetString("Username");
             var role = HttpContext.Session.GetString("Role");
 
-            if (string.IsNullOrEmpty(username))
-                return Unauthorized(new { Message = "No active session" });
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(role))
+            {
+                // fallback: try reading from cookie
+                var token = Request.Cookies["AuthToken"];
+                if (string.IsNullOrEmpty(token))
+                    return Unauthorized(new { Message = "No active session" });
+
+                try
+                {
+                    var handler = new JwtSecurityTokenHandler();
+                    var jwt = handler.ReadJwtToken(token);
+                    username = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+                    role = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+                }
+                catch
+                {
+                    return Unauthorized(new { Message = "Invalid token" });
+                }
+            }
 
             return Ok(new { Username = username, Role = role });
         }
 
+        // ✅ LOGOUT
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
+            Response.Cookies.Delete("AuthToken");
+            return Ok(new { Message = "Logged out successfully" });
+        }
+
+        // 🔒 JWT Generator
         private string GenerateToken(string username, string role)
         {
             var jwtSettings = _config.GetSection("JwtSettings");
@@ -81,7 +111,7 @@ namespace Tagom.API.Controllers
                 issuer: jwtSettings["Issuer"],
                 audience: jwtSettings["Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(Convert.ToDouble(jwtSettings["DurationInMinutes"])),
+                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(jwtSettings["DurationInMinutes"] ?? "60")),
                 signingCredentials: creds
             );
 
@@ -89,6 +119,7 @@ namespace Tagom.API.Controllers
         }
     }
 
+    // 🧾 Request Model
     public class LoginRequest
     {
         public string Username { get; set; } = string.Empty;
