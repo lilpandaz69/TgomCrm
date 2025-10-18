@@ -13,4 +13,12 @@ namespace Tagom.Application.DTOs
         public string? Phone { get; set; }
         public string? Email { get; set; }
     }
+    public class CustomersListResponse
+    {
+        public List<CustomerDto> Items { get; set; } = new();
+        public int TotalCount { get; set; }
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+    }
 }
+    

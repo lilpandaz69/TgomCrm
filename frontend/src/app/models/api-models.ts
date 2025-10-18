@@ -14,3 +14,17 @@ export interface NewSale { customerId?: number; items: Array<{ productId: number
 
 export interface Invoice { id: number; saleId: number; total: number; createdAt: string; }
 export interface InvoiceOverview { supplierId: number; productId: number; totalInvoices: number; totalAmount: number; }
+export interface CustomerDto {
+  customerId?: number;
+  name: string;
+  phone: string;
+  email?: string | null;
+}
+
+export interface CustomersListResponse {
+  items: CustomerDto[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
