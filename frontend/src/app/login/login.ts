@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 import { AuthService } from '../services/auth.service';
 
 @Component({
@@ -15,6 +17,7 @@ export class LoginComponent {
   errorMessage = '';
 
   constructor(
+    private http: HttpClient,
     private router: Router,
     private authService: AuthService
   ) {}
@@ -28,10 +31,12 @@ export class LoginComponent {
     this.loading = true;
     this.errorMessage = '';
 
-    this.authService.login(this.username, this.password)
+    const body = { username: this.username, password: this.password };
+
+    this.http.post<any>(`${environment.apiBaseUrl}/api/Auth/login`, body, { withCredentials: true })
       .subscribe({
         next: (res) => {
-          // ✅ السيرفس نفسه بيخزن الـ role ويكتب الكوكي
+          this.authService.setUser(res.role);
           this.router.navigate(['/dashboard']);
         },
         error: (err) => {

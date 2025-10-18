@@ -1,0 +1,343 @@
+.dashboard-container { display:flex; min-height:100vh; background:#f7f8fc; font-family:"Poppins",sans-serif; }
+
+/* Sidebar */
+.sidebar { width:250px; background:#fff; display:flex; flex-direction:column; justify-content:space-between; border-right:1px solid #e5e5e5; padding:20px; }
+.logo { text-align:center; }
+.logo-img { width:100px; height:auto; margin-bottom:8px; }
+.version { font-size:12px; color:#777; margin:0; }
+.menu { display:flex; flex-direction:column; gap:15px; margin-top:40px; }
+.menu-item { text-decoration:none; color:#555; padding:10px 15px; border-radius:8px; transition:.3s; }
+.menu-item.active, .menu-item:hover { background:#684efb; color:#fff; }
+.profile { display:flex; align-items:center; gap:10px; padding-top:20px; border-top:1px solid #eee; }
+.profile-img{ width:40px; height:40px; border-radius:50%; }
+.profile-info h4{ margin:0; font-size:14px; }
+.profile-info p{ margin:0; font-size:12px; color:#888; }
+.logout-btn{ padding:10px 20px; border:none; border-radius:8px; background:#f44336; color:#fff; font-weight:500; margin:10px; cursor:pointer; transition:background .2s; }
+.logout-btn:hover{ background:#d32f2f; }
+
+/* Main */
+.main-content{ flex:1; padding:40px; }
+.welcome{ font-size:22px; margin-bottom:30px; }
+
+/* Cards */
+.cards-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px; margin-bottom:24px; }
+.card{ background:#fff; border-radius:12px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,.05); display:flex; flex-direction:column; gap:8px; transition:transform .2s, box-shadow .2s; }
+.card:hover{ transform:translateY(-3px); box-shadow:0 4px 12px rgba(0,0,0,.1); }
+.card.small .kpi{ font-size:20px; font-weight:700; color:#333; }
+.card-icon{ font-size:22px; margin-bottom:4px; color:#684efb; }
+.card h3{ font-size:14px; font-weight:600; color:#333; margin:0; }
+
+/* Panel */
+.panel{ background:#fff; border:1px solid #e5e5e5; border-radius:16px; overflow:hidden; }
+.panel-head{ display:flex; justify-content:space-between; gap:12px; padding:18px; border-bottom:1px solid #f0f0f0; }
+.panel-title{ margin:0 0 4px; }
+.muted{ color:#9aa4b2; font-size:12px; }
+.actions{ display:flex; align-items:center; gap:10px; }
+.control input, .control select{ background:#fff; border:1px solid #e5e5e5; padding:10px 12px; border-radius:10px; }
+.table-wrap{ overflow:auto; }
+.grid{ width:100%; border-collapse:separate; border-spacing:0; }
+.grid thead th{ text-align:left; font-size:12px; color:#94a3b8; font-weight:600; padding:12px 18px; border-bottom:1px solid #eef0f3; background:#fafafb; }
+.grid tbody td{ padding:14px 18px; border-bottom:1px solid #f1f3f6; }
+.text-end{ text-align:right; }
+.empty{ text-align:center; color:#9aa4b2; padding:28px 0; }
+
+.panel-footer{ display:flex; justify-content:space-between; align-items:center; padding:14px 18px; background:#fff; }
+.hint{ font-size:12px; color:#9aa4b2; }
+.pager{ display:flex; gap:6px; }
+.pager button{ min-width:34px; height:34px; border:1px solid #e5e5e5; background:#fff; border-radius:8px; cursor:pointer; }
+.pager button.active{ background:#684efb; color:#fff; border-color:#684efb; }
+
+/* Loading & Error */
+.loading{ padding:40px; text-align:center; }
+.error{ color:#ef4444; padding:10px 18px; }
+
+/* Modal */
+.modal-backdrop{ position:fixed; inset:0; background:rgba(17,24,39,.35); }
+.modal{ position:fixed; inset:0; display:grid; place-items:center; }
+.modal-card{ width:420px; max-width:calc(100vw - 40px); background:#fff; border-radius:18px; padding:22px; border:1px solid #eef0f3; box-shadow:0 20px 60px rgba(0,0,0,.08); }
+.modal-card h3{ margin:0 0 16px; text-align:center; }
+
+.form-grid{ display:grid; grid-template-columns:1fr; gap:8px; }
+.form-grid label{ font-size:12px; color:#94a3b8; margin-top:8px; }
+.form-grid input{ width:100%; border:1px solid #dfe3ea; background:#fff; border-radius:12px; padding:12px 14px; }
+.field-error{ color:#ef4444; font-size:12px; margin-top:6px; }
+
+.btn{ border:1px solid #e5e5e5; background:#fff; border-radius:10px; padding:10px 14px; cursor:pointer; }
+.btn.primary{ background:#684efb; color:#fff; border-color:#684efb; }
+.btn.ghost{ background:#fff; border-color:#e5e5e5; color:#374151; }
+.btn-row{ display:flex; justify-content:flex-end; gap:10px; margin-top:14px; }
+/* --- Add Customer Modal (updated design) --- */
+.modal-card {
+  width: 400px;
+  max-width: 90%;
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 30px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  border: none;
+  text-align: center;
+  animation: popIn 0.3s ease;
+}
+
+.modal-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 20px;
+  text-transform: capitalize;
+}
+
+/* Smooth pop animation */
+@keyframes popIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Inputs */
+.modal-card input {
+  width: 90%;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  font-size: 14px;
+  color: #111;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.modal-card input:focus {
+  border-color: #684efb;
+  box-shadow: 0 0 0 3px rgba(104, 78, 251, 0.15);
+}
+
+/* Labels */
+.modal-card label {
+  display: block;
+  text-align: left;
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 10px;
+  font-weight: 500;
+}
+
+/* Button container */
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+/* Save (Add) button */
+.save-btn {
+  background: linear-gradient(90deg, #684efb, #3b82f6);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 12px 40px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(104, 78, 251, 0.3);
+}
+
+/* Cancel button */
+.cancel-btn {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 10px;
+  color: #374151;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 12px 30px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #e5e7eb;
+}
+
+/* Error messages */
+.field-error {
+  color: #ef4444;
+  font-size: 12px;
+  text-align: left;
+  margin-top: 4px;
+}
+
+/* Modal Styling */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 100;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 28px;
+  width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  border: 1px solid #e6e9ef;
+}
+
+.modal-card h3 {
+  font-weight: 600;
+  font-size: 18px;
+  margin-bottom: 18px;
+}
+
+.form-grid input {
+  border: 1px solid #d1d5db;
+  padding: 12px;
+  border-radius: 10px;
+  outline: none;
+  font-size: 14px;
+}
+
+.form-grid input:focus {
+  border-color: #684efb;
+  box-shadow: 0 0 0 2px rgba(104, 78, 251, 0.15);
+}
+
+.btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.btn.primary {
+  background: linear-gradient(to right, #684efb, #3d2dce);
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn.primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn.ghost {
+  background: #f3f4f6;
+  border: none;
+  color: #374151;
+}
+/* 🔍 Search Bar Styling */
+.actions input[type="search"] {
+  padding: 10px 14px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+  font-size: 15px;
+  font-family: "Poppins", sans-serif;
+  transition: all 0.3s ease;
+  width: 200px;
+  background-color: #f9fafb;
+  color: #333;
+}
+
+/* On focus */
+.actions input[type="search"]:focus {
+  border-color: #3b82f6; /* blue highlight */
+  background-color: #fff;
+  box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+}
+
+/* With placeholder */
+.actions input[type="search"]::placeholder {
+  color: #aaa;
+  font-size: 14px;
+}
+
+/* 🔹 Actions toolbar layout */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 🔍 Search Bar */
+.actions input[type="search"] {
+  padding: 10px 14px 10px 36px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 10px;
+  outline: none;
+  font-size: 14px;
+  font-family: "Poppins", sans-serif;
+  transition: all 0.3s ease;
+  width: 220px;
+  background-color: #f9fafb;
+  color: #333;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%23999" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10,2A8,8 0 1,1 2,10A8,8 0 0,1 10,2M22,22L15,15"/></svg>');
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  background-size: 16px;
+}
+
+.actions input[type="search"]:focus {
+  border-color: #684efb;
+  background-color: #fff;
+  box-shadow: 0 0 6px rgba(104, 78, 251, 0.25);
+}
+
+.actions input[type="search"]::placeholder {
+  color: #aaa;
+  font-size: 13px;
+}
+
+/* 🔽 Sort Dropdown - with hidden arrow */
+.actions select {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #e0e0e0;
+  background-color: #f9fafb;
+  font-size: 14px;
+  font-family: "Poppins", sans-serif;
+  color: #333;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  /* 🔹 Hide default arrow */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none; /* removes custom arrow too */
+}
+
+/* Hover and Focus */
+.actions select:hover,
+.actions select:focus {
+  border-color: #684efb;
+  background-color: #fff;
+  box-shadow: 0 0 6px rgba(104, 78, 251, 0.25);
+}
+
+/* Optional label */
+.actions label {
+  font-size: 13px;
+  color: #777;
+}

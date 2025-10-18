@@ -1,8 +1,8 @@
-import { inject, Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { CustomerDto, CustomersListResponse } from '../models/api-models';
 import { firstValueFrom } from 'rxjs';
+import { CustomerDto, CustomersListResponse } from '../models/api-models';
 
 @Injectable({ providedIn: 'root' })
 export class CustomersService {
@@ -15,18 +15,18 @@ export class CustomersService {
       .set('pageSize', opts.pageSize)
       .set('sort', opts.sort ?? 'newest');
 
-    if (opts.search && opts.search.trim()) {
+    if (opts.search?.trim()) {
       params = params.set('search', opts.search.trim());
     }
 
-    return this.http.get<CustomersListResponse>(this.BASE, { params });
+    return this.http.get<CustomersListResponse>(this.BASE, { params, withCredentials: true });
   }
 
   getByPhone(phone: string) {
-    return this.http.get<CustomerDto>(`${this.BASE}/by-phone/${encodeURIComponent(phone)}`);
+    return this.http.get<CustomerDto>(`${this.BASE}/by-phone/${encodeURIComponent(phone)}`, { withCredentials: true });
   }
 
   async create(dto: CustomerDto) {
-    return await firstValueFrom(this.http.post<CustomerDto>(this.BASE, dto));
+    return await firstValueFrom(this.http.post<CustomerDto>(this.BASE, dto, { withCredentials: true }));
   }
 }

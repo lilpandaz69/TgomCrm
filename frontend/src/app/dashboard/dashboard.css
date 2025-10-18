@@ -131,18 +131,3 @@
 .open-link:hover {
   text-decoration: underline;
 }
-.logout-btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  background-color: #f44336;
-  color: white;
-  font-weight: 500;
-  margin: 10px;
-  cursor: pointer;
-  transition: background 0.2s ease-in-out;
-}
-
-.logout-btn:hover {
-  background-color: #d32f2f;
-}

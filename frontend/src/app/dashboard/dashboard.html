@@ -3,32 +3,32 @@
   <aside class="sidebar">
     <!-- ✅ Logo Section -->
     <div class="logo">
-      <img src="assets/Tagomlogo.png" alt="TAGOM Logo" class="logo-img" />
+    <img src="assets/Tagomlogo.png" alt="TAGOM Logo" class="logo-img" />
       <p class="version">TAGOM v.01</p>
     </div>
 
     <nav class="menu">
-      <a class="menu-item active" href="#">Dashboard</a>
-      <a class="menu-item" href="#">Product</a>
-      <a class="menu-item" href="#">Customers</a>
-      <a class="menu-item" href="#">Suppliers</a>
-      <a class="menu-item" href="#">Sales</a>
+      <a class="menu-item active" href="/dashboard">Dashboard</a>
+      <a class="menu-item" href="/product">Product</a>
+      <a class="menu-item" href="/customers">Customers</a>
+      <a class="menu-item" href="/supplier">Suppliers</a>
+      <a class="menu-item" href="/sale">Sales</a>
     </nav>
 
     <div class="profile">
-      <img src="assets/raw.png" alt="User" class="profile-img" />
-      <div class="profile-info">
-        <h4>
-          <ng-container *ngIf="role?.toLowerCase() === 'owner'; else staffName">
-            Mr Samir
-          </ng-container>
-          <ng-template #staffName>
-            Staff
-          </ng-template>
-        </h4>
-        <p>{{ role  }}</p>
-      </div>
-      <button class="logout-btn" (click)="logout()">Logout</button>
+  <img src="assets/raw.png" alt="User" class="profile-img" />
+  <div class="profile-info">
+<h4>
+  <ng-container *ngIf="role?.toLowerCase() === 'owner'; else staffName">
+    Mr Samir
+  </ng-container>
+  <ng-template #staffName>
+    Staff
+  </ng-template>
+</h4>
+<p>{{ role }}</p>
+
+  </div>
     </div>
   </aside>
 
@@ -39,33 +39,33 @@
         Hello Mr Samir 👋,
       </ng-container>
       <ng-template #staffGreeting>
-          Hello Staff 👋,
-        </ng-template>
-      </h2>
-
+        Hello Staff 👋,
+      </ng-template>
+    </h2>
+    
     <div class="cards-grid">
       <div class="card">
         <div class="card-icon">📦</div>
         <h3>Product Management</h3>
-        <a href="#" class="open-link">Open →</a>
+        <a routerLink="/product" class="open-link">Open →</a>
       </div>
 
       <div class="card">
-  <div class="card-icon">👤</div>
-  <h3>Customers Management</h3>
-  <a routerLink="/customers" class="open-link">Open →</a>
-</div>
+        <div class="card-icon">👤</div>
+        <h3>Customers Management</h3>
+        <a href="/customers" class="open-link">Open →</a>
+      </div>
 
       <div class="card">
         <div class="card-icon">👥</div>
         <h3>Suppliers Management</h3>
-        <a href="#" class="open-link">Open →</a>
+        <a href="/supplier" class="open-link">Open →</a>
       </div>
 
       <div class="card">
         <div class="card-icon">🧾</div>
         <h3>Sales Management</h3>
-        <a href="#" class="open-link">Open →</a>
+        <a href="/sale" class="open-link">Open →</a>
       </div>
     </div>
   </main>

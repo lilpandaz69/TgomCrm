@@ -1,37 +1,55 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Tagom.Infrastructure;
+using Tagom.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddInfrastructure(builder.Configuration);
+// ============================
+// ✅ Configure DbContext
+// ============================
+builder.Services.AddDbContext<TagomDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default"));
+});
 
-// ✅ Enable CORS (to allow Angular app to connect)
+// ============================
+// ✅ Add Controllers + Session
+// ============================
+builder.Services.AddControllers();
+
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // HTTPS only
+});
+
+// ============================
+// ✅ Configure CORS for Angular
+// ============================
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngular", policy =>
+    options.AddPolicy("AllowAngularApp", policy =>
     {
-        policy.WithOrigins("http://localhost:4200") // Angular dev server
+        policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
     });
 });
 
-// 🔹 Add Session
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(options =>
-{
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // Session duration
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-});
-
+// ============================
+// ✅ JWT Authentication
+// ============================
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        var jwtSettings = builder.Configuration.GetSection("JwtSettings");
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -44,21 +62,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// ============================
+// ✅ Configure HTTPS for Kestrel
+// ============================
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenLocalhost(7043, listenOptions => listenOptions.UseHttps());
+});
 
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+// ============================
+// ✅ Middleware Pipeline
+// ============================
+app.UseRouting();
 
-// ✅ Enable HTTPS redirect (optional but good)
-app.UseHttpsRedirection();
-
-// ✅ Add CORS before Authentication/Authorization
-app.UseCors("AllowAngular");
+// CORS must come before session/auth
+app.UseCors("AllowAngularApp");
 
 app.UseSession();
 app.UseAuthentication();

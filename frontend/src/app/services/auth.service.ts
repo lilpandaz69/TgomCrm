@@ -1,76 +1,39 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { tap, catchError, map } from 'rxjs/operators';
 
-export interface UserSession {
-  role: string | null;
-  username: string | null;
-}
-
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class AuthService {
-  private http = inject(HttpClient);
+  private role: string | null = null;
 
-  // Stream لحالة المستخدم
-  private session$ = new BehaviorSubject<UserSession>({ role: null, username: null });
+  constructor(private http: HttpClient) {}
 
-  // للاشتراك من الكومبوننت
-  sessionChanges(): Observable<UserSession> {
-    return this.session$.asObservable();
+  setUser(role: string) {
+    this.role = role;
   }
 
-  // لقطة حالية
-  get sessionSnapshot(): UserSession {
-    return this.session$.value;
+  getRole(): string | null {
+    return this.role;
   }
 
-  // ✅ Login — السيرفر يكتب الكوكي
-  login(username: string, password: string) {
-    return this.http.post<{ role: string }>(
-      `${environment.apiBaseUrl}/api/Auth/login`,
-      { username, password },
-      { withCredentials: true }
-    ).pipe(
-      tap(res => this.session$.next({ role: res.role ?? null, username }))
-    );
+  clearUser() {
+    this.role = null;
   }
 
-  // ✅ Logout — يمسح الكوكي من السيرفر ويوجّه للّوجين
-  logout() {
-    this.http.post(`${environment.apiBaseUrl}/api/Auth/logout`, {}, { withCredentials: true })
-      .subscribe({
-        next: () => {
-          this.session$.next({ role: null, username: null });
-          window.location.href = '/login';
-        },
-        error: () => {
-          this.session$.next({ role: null, username: null });
-          window.location.href = '/login';
-        }
-      });
-  }
-
-  // ✅ عند فتح الصفحة أو الريلود — يجيب الدور من السيرفر عبر الكوكي
-  fetchUserFromServer(): Observable<UserSession> {
-    // لو عندنا قيمة بالفعل فالسيرفس، رجّعها (تقلل طلبات)
-    const snap = this.sessionSnapshot;
-    if (snap.role) return of(snap);
+  // ✅ Called on app start or page reload
+  fetchUserFromServer(): Observable<string | null> {
+    if (this.role) return of(this.role); // already cached in memory
 
     return this.http
-      .get<{ username: string; role: string }>(
-        `${environment.apiBaseUrl}/api/Auth/me`,
-        { withCredentials: true }
-      )
+      .get<{ role: string }>(`${environment.apiBaseUrl}/api/Auth/me`, { withCredentials: true })
       .pipe(
-        map(res => ({ role: res?.role ?? null, username: res?.username ?? null })),
-        tap(s => this.session$.next(s)),
-        catchError(() => {
-          const empty = { role: null, username: null };
-          this.session$.next(empty);
-          return of(empty);
-        })
+        map(res => res?.role || null),     // ✅ Convert to string | null
+        tap(role => this.role = role),     // ✅ Save in memory
+        catchError(() => of(null))         // ✅ Handle errors gracefully
       );
   }
 }
