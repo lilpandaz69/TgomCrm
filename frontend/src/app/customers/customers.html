@@ -10,8 +10,8 @@
       <a class="menu-item" routerLink="/dashboard">Dashboard</a>
       <a class="menu-item" routerLink="/product">Product</a>
       <a class="menu-item active" routerLink="/customers">Customers</a>
-      <a class="menu-item" routerLink="/suppliers">Suppliers</a>
-      <a class="menu-item" routerLink="/sales">Sales</a>
+      <a class="menu-item" routerLink="/supplier">Suppliers</a>
+      <a class="menu-item" routerLink="/sale">Sales</a>
     </nav>
 
     <div class="profile">
@@ -27,7 +27,6 @@
 
   <!-- Main Content -->
   <main class="main-content">
-
     <!-- Cards -->
     <div class="cards-grid">
       <div class="card small">
@@ -68,7 +67,6 @@
               <th>Customer Name</th>
               <th>Phone</th>
               <th>Email</th>
-              <th class="text-end">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -76,9 +74,6 @@
               <td>{{ c.name }}</td>
               <td>{{ c.phone }}</td>
               <td>{{ c.email || '—' }}</td>
-              <td class="text-end">
-                <button class="btn ghost">Invoice</button>
-              </td>
             </tr>
             <tr *ngIf="!customers.length">
               <td colspan="4" class="empty">No customers found</td>
@@ -89,9 +84,7 @@
 
       <!-- Footer -->
       <div class="panel-footer">
-        <div class="hint">
-          Page {{ page }} of {{ totalPages }}
-        </div>
+        <div class="hint">Page {{ page }} of {{ totalPages }}</div>
         <div class="pager">
           <button (click)="go(page - 1)" [disabled]="page === 1">«</button>
           <button
@@ -119,6 +112,17 @@
 
           <label>Phone</label>
           <input type="text" formControlName="phone" placeholder="Enter phone number" />
+
+          <!-- ⚠️ Error messages for phone -->
+          <div *ngIf="addForm.get('phone')?.touched && addForm.get('phone')?.hasError('required')" class="error">
+            Phone number is required.
+          </div>
+          <div *ngIf="addForm.get('phone')?.touched && addForm.get('phone')?.hasError('minlength')" class="error">
+            Phone number is too short.
+          </div>
+          <div *ngIf="addForm.get('phone')?.hasError('duplicate')" class="error">
+            This phone number already exists.
+          </div>
 
           <label>Email</label>
           <input type="email" formControlName="email" placeholder="Enter email address" />

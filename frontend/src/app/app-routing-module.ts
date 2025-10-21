@@ -6,7 +6,7 @@ import { AuthGuard } from './services/auth.guard';
 import { Sale } from './sale/sale';
 import { Product } from './product/product';
 import { CustomersComponent } from './customers/customers';
-import { Supplier } from './supplier/supplier';
+import { SuppliersComponent } from './supplier/supplier';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -15,7 +15,7 @@ const routes: Routes = [
   { path: 'sale', component: Sale },
   { path: 'product', component: Product },
   { path: 'customers', component: CustomersComponent },
-  { path: 'supplier', component: Supplier },
+  { path: 'supplier', component: SuppliersComponent },
 ];
 
 @NgModule({
