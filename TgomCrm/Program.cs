@@ -123,7 +123,7 @@ app.UseCors("AllowAngularApp");
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseStaticFiles(); // ✅ serve wwwroot folder
 app.MapControllers();
 
 app.Run();

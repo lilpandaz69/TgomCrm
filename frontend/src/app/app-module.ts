@@ -26,6 +26,7 @@ import { Sale } from './sale/sale';
     BrowserModule,
     AppRoutingModule,
     FormsModule,
+    FormsModule,
     ReactiveFormsModule,
     CommonModule
   ],

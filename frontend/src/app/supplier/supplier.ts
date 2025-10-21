@@ -13,6 +13,7 @@ import { Router } from '@angular/router';
 })
 export class SuppliersComponent implements OnInit {
   suppliers: any[] = [];
+  filteredSuppliers: any[] = [];
   totalCount = 0;
   page = 1;
   pageSize = 8;
@@ -34,12 +35,13 @@ export class SuppliersComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    // Initialize Add Supplier form
     this.addForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
       phone: ['', [Validators.required, Validators.minLength(5)]]
     });
 
-    // ✅ Clear duplicate error automatically when user types again
+    // Clear duplicate error automatically when editing phone
     this.addForm.get('phone')?.valueChanges.subscribe(() => {
       if (this.addForm.get('phone')?.hasError('duplicate')) {
         this.addForm.get('phone')?.setErrors(null);
@@ -49,62 +51,70 @@ export class SuppliersComponent implements OnInit {
     this.loadSuppliers();
   }
 
-  // ✅ Load suppliers from backend
-  loadSuppliers() {
-    this.loading = true;
-    this.http
-      .get<any>(
-        `${environment.apiBaseUrl}/api/suppliers?search=${this.search}&sort=${this.sort}&page=${this.page}&pageSize=${this.pageSize}`
-      )
-      .subscribe({
-        next: (res) => {
-          // Handle possible response shapes
-          if (Array.isArray(res)) {
-            this.suppliers = res;
-            this.totalCount = res.length;
-          } else if (res.items) {
-            this.suppliers = res.items;
-            this.totalCount = res.totalCount || this.suppliers.length;
-          } else if (res.data) {
-            this.suppliers = res.data;
-            this.totalCount = res.count || this.suppliers.length;
-          } else {
-            this.suppliers = [];
-            this.totalCount = 0;
-          }
-
-          this.loading = false;
-        },
-        error: (err) => {
-          console.error('❌ Error loading suppliers:', err);
-          this.loading = false;
-          this.suppliers = [];
-          this.totalCount = 0;
-        }
-      });
+  // Search input event
+  onSearch(event: Event) {
+    this.search = (event.target as HTMLInputElement).value.toLowerCase();
+    this.page = 1;
+    this.applyFilter();
   }
 
-  // ✅ Handle sorting
+  // Filter suppliers in frontend
+  applyFilter() {
+    if (!this.search) {
+      this.filteredSuppliers = [...this.suppliers];
+    } else {
+      this.filteredSuppliers = this.suppliers.filter(
+        s =>
+          s.name.toLowerCase().includes(this.search) ||
+          s.phone.toLowerCase().includes(this.search)
+      );
+    }
+    this.totalCount = this.filteredSuppliers.length;
+  }
+
+  // Load suppliers from API
+  loadSuppliers() {
+    this.loading = true;
+    const params = `?search=${encodeURIComponent(this.search)}&sort=${this.sort}&page=${this.page}&pageSize=${this.pageSize}`;
+
+    this.http.get<any>(`${environment.apiBaseUrl}/api/suppliers${params}`).subscribe({
+      next: res => {
+        if (res && Array.isArray(res)) {
+          this.suppliers = res;
+          // Remove exact duplicates (same name + phone)
+          this.suppliers = this.suppliers.filter((s, index, self) =>
+            index === self.findIndex(t => t.name === s.name && t.phone === s.phone)
+          );
+        } else if (res.items) {
+          this.suppliers = res.items;
+        } else {
+          this.suppliers = [];
+        }
+
+        // Apply frontend filter
+        this.applyFilter();
+        this.loading = false;
+      },
+      error: err => {
+        console.error('Error loading suppliers:', err);
+        this.suppliers = [];
+        this.filteredSuppliers = [];
+        this.totalCount = 0;
+        this.loading = false;
+      }
+    });
+  }
+
+  // Sort change
   onSortChange(event: Event) {
     this.sort = (event.target as HTMLSelectElement).value;
     this.page = 1;
     this.loadSuppliers();
   }
 
-  // ✅ Handle searching
-  onSearch(event: Event) {
-    this.search = (event.target as HTMLInputElement).value;
-    this.page = 1;
-    this.loadSuppliers();
-  }
-
-  // ✅ Pagination
+  // Pagination
   get totalPages(): number {
-    return Math.max(1, Math.ceil((this.totalCount || 0) / this.pageSize));
-  }
-
-  getPages() {
-    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+    return Math.max(1, Math.ceil(this.totalCount / this.pageSize));
   }
 
   go(p: number) {
@@ -113,7 +123,7 @@ export class SuppliersComponent implements OnInit {
     this.loadSuppliers();
   }
 
-  // ✅ Modal controls
+  // Modal controls
   openAdd() {
     this.showAddForm = true;
     this.addForm.reset();
@@ -124,7 +134,7 @@ export class SuppliersComponent implements OnInit {
     this.showAddForm = false;
   }
 
-  // ✅ Add supplier (with frontend duplicate phone check)
+  // Add new supplier
   addSupplier() {
     if (this.addForm.invalid) {
       this.addForm.markAllAsTouched();
@@ -132,47 +142,37 @@ export class SuppliersComponent implements OnInit {
     }
 
     const phoneValue = this.addForm.value.phone.trim();
-    const phoneExists = this.suppliers.some(
-      (s) => s.phone.trim().toLowerCase() === phoneValue.toLowerCase()
-    );
-
-    if (phoneExists) {
+    const exists = this.suppliers.some(s => s.phone?.trim() === phoneValue);
+    if (exists) {
       this.addForm.get('phone')?.setErrors({ duplicate: true });
       return;
     }
 
     this.loading = true;
-
-    this.http
-      .post<any>(`${environment.apiBaseUrl}/api/suppliers`, this.addForm.value)
-      .subscribe({
-        next: (res) => {
-          console.log('✅ Supplier Created:', res);
-          this.closeAdd();
-          this.loadSuppliers();
-          this.loading = false;
-        },
-        error: (err) => {
-          console.error('❌ Failed to add supplier', err);
-          alert('An error occurred while saving. Please try again.');
-          this.loading = false;
-        }
-      });
+    this.http.post(`${environment.apiBaseUrl}/api/suppliers`, this.addForm.value).subscribe({
+      next: () => {
+        this.closeAdd();
+        this.page = 1;
+        this.loadSuppliers();
+        this.loading = false;
+      },
+      error: err => {
+        console.error('Error adding supplier', err);
+        this.loading = false;
+      }
+    });
   }
 
-  // ✅ Logout
   logout(): void {
-    this.http
-      .post(`${environment.apiBaseUrl}/api/Auth/logout`, {}, { withCredentials: true })
-      .subscribe({
-        next: () => {
-          this.authService.clearUser();
-          this.router.navigate(['/login']);
-        },
-        error: () => {
-          this.authService.clearUser();
-          this.router.navigate(['/login']);
-        }
-      });
+    this.http.post(`${environment.apiBaseUrl}/api/Auth/logout`, {}, { withCredentials: true }).subscribe({
+      next: () => {
+        this.authService.clearUser();
+        this.router.navigate(['/login']);
+      },
+      error: () => {
+        this.authService.clearUser();
+        this.router.navigate(['/login']);
+      }
+    });
   }
 }

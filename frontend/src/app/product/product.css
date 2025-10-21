@@ -424,3 +424,10 @@
 .cancel-btn:hover {
   background: #e5e7eb;
 }
+/* Table product images */
+.product-img {
+  width: 40px;        /* smaller width */
+  height: 40px;       /* smaller height */
+  object-fit: cover;  /* keep aspect ratio and crop if needed */
+  border-radius: 6px; /* optional: rounded corners */
+}

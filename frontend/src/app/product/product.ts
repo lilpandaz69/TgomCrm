@@ -6,12 +6,13 @@ import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-product',
-  standalone:false,
+  standalone: false,
   templateUrl: './product.html',
   styleUrls: ['./product.css']
 })
 export class ProductComponent implements OnInit {
   products: any[] = [];
+  allProducts: any[] = []; // store all products for client-side filtering
   suppliers: any[] = [];
   searchTerm = '';
   loading = false;
@@ -45,21 +46,22 @@ export class ProductComponent implements OnInit {
     this.loadSuppliers();
   }
 
-  // Load products
+  // Load products from API
   loadProducts() {
     this.loading = true;
     this.http.get(`${environment.apiBaseUrl}/api/products`).subscribe({
       next: (res: any) => {
-        this.products = res.map((p: any) => ({
+        this.allProducts = res.map((p: any) => ({
           id: p.productId,
           name: p.name,
           category: p.category,
           price: p.price,
           stock: p.stock,
           originalPrice: p.orignailprice,
-          imageUrl: p.imageUrl,
+          imageUrl: p.imageUrl ? `${environment.apiBaseUrl}${p.imageUrl}` : null,
           supplierName: p.supplier?.name || 'Unknown'
         }));
+        this.filterProducts(); // apply initial filter
         this.loading = false;
       },
       error: err => {
@@ -67,6 +69,16 @@ export class ProductComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  // Filter products by search term (client-side)
+  filterProducts() {
+    const term = this.searchTerm.toLowerCase();
+    this.products = this.allProducts.filter(p =>
+      p.name.toLowerCase().includes(term) ||
+      p.category.toLowerCase().includes(term) ||
+      p.supplierName.toLowerCase().includes(term)
+    );
   }
 
   // Load suppliers
@@ -143,12 +155,11 @@ export class ProductComponent implements OnInit {
     }
 
     const request$ = this.editing && this.productForm.id
-      ? this.http.put(`${environment.apiBaseUrl}/api/products/${this.productForm.id}`, formData)
+      ? this.http.put(`${environment.apiBaseUrl}/api/products/${this.productForm.id}/update`, formData)
       : this.http.post(`${environment.apiBaseUrl}/api/products`, formData);
 
     request$.subscribe({
       next: () => {
-        alert(this.editing ? 'Product updated successfully!' : 'Product added successfully!');
         this.loadProducts();
         this.closeModal();
       },
@@ -159,14 +170,12 @@ export class ProductComponent implements OnInit {
     });
   }
 
-  // Delete product
+  // Delete product instantly (no confirmation)
   deleteProduct(id: number) {
-    if (confirm('Are you sure you want to delete this product?')) {
-      this.http.delete(`${environment.apiBaseUrl}/api/products/${id}`).subscribe({
-        next: () => this.loadProducts(),
-        error: err => console.error('Error deleting product:', err)
-      });
-    }
+    this.http.delete(`${environment.apiBaseUrl}/api/products/${id}/delete`).subscribe({
+      next: () => this.loadProducts(),
+      error: err => console.error('Error deleting product:', err)
+    });
   }
 
   // Logout
