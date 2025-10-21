@@ -1,1 +1,149 @@
-<p>supplier works!</p>
+<div class="dashboard-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <img src="assets/Tagomlogo.png" alt="TAGOM Logo" class="logo-img" />
+      <p class="version">TAGOM v.01</p>
+    </div>
+
+    <nav class="menu">
+      <a class="menu-item" routerLink="/dashboard">Dashboard</a>
+      <a class="menu-item" routerLink="/product">Product</a>
+      <a class="menu-item" routerLink="/customers">Customers</a>
+      <a class="menu-item active" routerLink="/supplier">Suppliers</a>
+      <a class="menu-item" routerLink="/sale">Sales</a>
+    </nav>
+
+    <div class="profile">
+      <img src="assets/raw.png" alt="User" class="profile-img" />
+      <div class="profile-info">
+        <h4>Mr {{ username }}</h4>
+        <p>{{ role }}</p>
+      </div>
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- KPI Cards -->
+    <div class="cards-grid">
+      <div class="card small">
+        <div class="card-icon">🏭</div>
+        <h3>Total Suppliers</h3>
+        <div class="kpi">{{ totalCount | number }}</div>
+      </div>
+      <div class="card small">
+        <div class="card-icon">✨</div>
+        <h3>Sort</h3>
+        <div class="kpi">{{ sort | titlecase }}</div>
+      </div>
+    </div>
+
+    <!-- Supplier Table -->
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h3 class="panel-title">All Suppliers</h3>
+          <span class="muted">Manage, search, and add suppliers</span>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" (click)="openAdd()">Add New Supplier</button>
+          <input type="search" placeholder="Search" (input)="onSearch($event)" />
+          <select (change)="onSortChange($event)">
+            <option value="newest" selected>Newest</option>
+            <option value="oldest">Oldest</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Supplier List -->
+      <div class="table-wrap" *ngIf="!loading; else loadingTpl">
+        <table class="grid">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Supplier Name</th>
+              <th>Phone</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of suppliers; let i = index">
+              <td>{{ (page - 1) * pageSize + i + 1 }}</td>
+              <td>{{ s.name }}</td>
+              <td>{{ s.phone }}</td>
+            </tr>
+            <tr *ngIf="!suppliers.length">
+              <td colspan="3" class="empty">No suppliers found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="panel-footer">
+        <div class="hint">Page {{ page }} of {{ totalPages }}</div>
+        <div class="pager">
+          <button (click)="go(page - 1)" [disabled]="page === 1">«</button>
+          <button
+            *ngFor="let p of getPages()"
+            [class.active]="page === p"
+            (click)="go(p)">
+            {{ p }}
+          </button>
+          <button (click)="go(page + 1)" [disabled]="page === totalPages">»</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Add Supplier Modal -->
+  <div class="modal-backdrop" *ngIf="showAddForm" (click)="closeAdd()"></div>
+  <div class="modal" *ngIf="showAddForm">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <h3>Add New Supplier</h3>
+
+      <form [formGroup]="addForm">
+        <div class="form-grid">
+          <label>Full Name</label>
+          <input type="text" formControlName="name" placeholder="Enter full name" #nameInput />
+          <div *ngIf="addForm.get('name')?.touched && addForm.get('name')?.hasError('required')" class="error">
+            Name is required.
+          </div>
+          <div *ngIf="addForm.get('name')?.hasError('minlength')" class="error">
+            Name is too short.
+          </div>
+
+          <label>Phone</label>
+          <input type="text" formControlName="phone" placeholder="Enter phone number" />
+          <div *ngIf="addForm.get('phone')?.touched && addForm.get('phone')?.hasError('required')" class="error">
+            Phone number is required.
+          </div>
+          <div *ngIf="addForm.get('phone')?.touched && addForm.get('phone')?.hasError('minlength')" class="error">
+            Phone number is too short.
+          </div>
+          <div *ngIf="addForm.get('phone')?.hasError('duplicate')" class="error">
+            This phone number already exists.
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button
+            type="button"
+            class="btn primary"
+            (click)="addSupplier()"
+            [disabled]="addForm.invalid || loading">
+            {{ loading ? 'Saving…' : 'Save' }}
+          </button>
+          <button type="button" class="btn ghost" (click)="closeAdd()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Loading Template -->
+  <ng-template #loadingTpl>
+    <div class="loading">Loading…</div>
+  </ng-template>
+</div>

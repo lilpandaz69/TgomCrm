@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { environment } from '../../environments/environment';
 import { AuthService } from '../services/auth.service';
-import { Router } from '@angular/router'; // ✅ fixed import
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-customers',
@@ -30,7 +30,7 @@ export class CustomersComponent implements OnInit {
   constructor(
     private http: HttpClient,
     private fb: FormBuilder,
-    private router: Router,         // ✅ fixed Router type
+    private router: Router,
     private authService: AuthService
   ) {}
 
@@ -41,10 +41,17 @@ export class CustomersComponent implements OnInit {
       email: ['', [Validators.email]]
     });
 
+    // Auto clear duplicate error when user edits phone
+    this.addForm.get('phone')?.valueChanges.subscribe(() => {
+      if (this.addForm.get('phone')?.hasError('duplicate')) {
+        this.addForm.get('phone')?.setErrors(null);
+      }
+    });
+
     this.loadCustomers();
   }
 
-  // 🔹 Load all customers
+  // Load customers from API
   loadCustomers() {
     this.loading = true;
     this.http
@@ -64,21 +71,21 @@ export class CustomersComponent implements OnInit {
       });
   }
 
-  // 🔹 Sorting
+  // Sorting
   onSortChange(event: Event) {
     this.sort = (event.target as HTMLSelectElement).value;
     this.page = 1;
     this.loadCustomers();
   }
 
-  // 🔹 Searching
+  // Searching
   onSearch(event: Event) {
     this.search = (event.target as HTMLInputElement).value;
     this.page = 1;
     this.loadCustomers();
   }
 
-  // 🔹 Pagination
+  // Pagination
   get totalPages(): number {
     return Math.max(1, Math.ceil(this.totalCount / this.pageSize));
   }
@@ -89,7 +96,7 @@ export class CustomersComponent implements OnInit {
     this.loadCustomers();
   }
 
-  // 🔹 Add form controls
+  // Modal controls
   openAdd() {
     this.showAddForm = true;
     this.addForm.reset();
@@ -100,21 +107,34 @@ export class CustomersComponent implements OnInit {
     this.showAddForm = false;
   }
 
-  // 🔹 Save new customer (no alert, just auto-refresh)
+  // Add new customer (with phone uniqueness check)
   addCustomer() {
     if (this.addForm.invalid) {
       this.addForm.markAllAsTouched();
       return;
     }
 
+    const phoneValue = this.addForm.value.phone.trim();
+
+    // ✅ Check for duplicate phone in current list
+    const phoneExists = this.customers.some(
+      (c) => c.phone?.trim() === phoneValue
+    );
+
+    if (phoneExists) {
+      this.addForm.get('phone')?.setErrors({ duplicate: true });
+      return;
+    }
+
     this.loading = true;
+
     this.http
       .post(`${environment.apiBaseUrl}/api/customers`, this.addForm.value)
       .subscribe({
         next: () => {
-          this.closeAdd();     // ✅ close form
-          this.page = 1;       // ✅ go back to first page
-          this.loadCustomers(); // ✅ auto refresh list
+          this.closeAdd();
+          this.page = 1;
+          this.loadCustomers();
           this.loading = false;
         },
         error: (err) => {
@@ -124,17 +144,19 @@ export class CustomersComponent implements OnInit {
       });
   }
 
-  // 🔹 Logout
+  // Logout
   logout(): void {
-    this.http.post(`${environment.apiBaseUrl}/api/Auth/logout`, {}, { withCredentials: true }).subscribe({
-      next: () => {
-        this.authService.clearUser();
-        this.router.navigate(['/login']); // ✅ works now
-      },
-      error: () => {
-        this.authService.clearUser();
-        this.router.navigate(['/login']); // ✅ works now
-      }
-    });
+    this.http
+      .post(`${environment.apiBaseUrl}/api/Auth/logout`, {}, { withCredentials: true })
+      .subscribe({
+        next: () => {
+          this.authService.clearUser();
+          this.router.navigate(['/login']);
+        },
+        error: () => {
+          this.authService.clearUser();
+          this.router.navigate(['/login']);
+        }
+      });
   }
 }
