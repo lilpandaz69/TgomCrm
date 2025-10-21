@@ -20,6 +20,106 @@ namespace TgomCrm.API.Controllers
             _env = env;
         }
 
+        [HttpPut("{id}/update")]
+        public async Task<IActionResult> Update(int id, [FromForm] ProductDto dto)
+        {
+            var product = await _db.Products.Include(p => p.Inventory).FirstOrDefaultAsync(p => p.ProductId == id);
+            if (product == null)
+                return NotFound($"Product with ID {id} not found.");
+
+            var supplier = await _db.Suppliers.FindAsync(dto.SupplierId);
+            if (supplier == null)
+                return BadRequest($"Supplier with ID {dto.SupplierId} not found.");
+
+            string? imagePath = product.ImageUrl;
+
+            
+            if (dto.ImageFile != null)
+            {
+                var uploadsFolder = Path.Combine(
+                    _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"),
+                    "images"
+                );
+
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(dto.ImageFile.FileName)}";
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await dto.ImageFile.CopyToAsync(stream);
+                }
+
+                
+                if (!string.IsNullOrEmpty(product.ImageUrl))
+                {
+                    var oldPath = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), product.ImageUrl.TrimStart('/'));
+                    if (System.IO.File.Exists(oldPath))
+                        System.IO.File.Delete(oldPath);
+                }
+
+                imagePath = $"/images/{fileName}";
+            }
+
+            
+            product.Name = dto.Name;
+            product.Price = dto.Price;
+            product.Orignailprice = dto.Orignailprice;
+            product.Category = dto.Category;
+            product.Stock = dto.Stock;
+            product.SupplierId = dto.SupplierId;
+            product.ImageUrl = imagePath;
+
+            if (product.Inventory != null)
+                product.Inventory.Quantity = dto.Stock;
+
+            await _db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = $"Product '{product.Name}' updated successfully.",
+                product = new
+                {
+                    product.ProductId,
+                    product.Name,
+                    product.Price,
+                    product.Orignailprice,
+                    product.Category,
+                    product.Stock,
+                    product.ImageUrl,
+                    Supplier = new { supplier.SupplierId, supplier.Name }
+                }
+            });
+        }
+
+        [HttpDelete("{id}/delete")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var product = await _db.Products.Include(p => p.Inventory).FirstOrDefaultAsync(p => p.ProductId == id);
+            if (product == null)
+                return NotFound($"Product with ID {id} not found.");
+
+            
+            if (!string.IsNullOrEmpty(product.ImageUrl))
+            {
+                var imagePath = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), product.ImageUrl.TrimStart('/'));
+                if (System.IO.File.Exists(imagePath))
+                    System.IO.File.Delete(imagePath);
+            }
+
+            
+            if (product.Inventory != null)
+                _db.Inventories.Remove(product.Inventory);
+
+            _db.Products.Remove(product);
+            await _db.SaveChangesAsync();
+
+            return Ok(new { message = $"Product '{product.Name}' deleted successfully." });
+        }
+
+
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -163,6 +263,8 @@ namespace TgomCrm.API.Controllers
                     Supplier = new { supplier.SupplierId, supplier.Name }
                 }
             });
+
         }
+
     }
 }
