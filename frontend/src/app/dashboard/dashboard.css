@@ -131,3 +131,7 @@
 .open-link:hover {
   text-decoration: underline;
 }
+
+
+.logout-btn{ padding:10px 20px; border:none; border-radius:8px; background:#f44336; color:#fff; font-weight:500; margin:10px; cursor:pointer; transition:background .2s; }
+.logout-btn:hover{ background:#d32f2f; }

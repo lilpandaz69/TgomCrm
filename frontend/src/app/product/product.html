@@ -1,1 +1,141 @@
-<p>product works!</p>
+<div class="dashboard-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <img src="assets/Tagomlogo.png" alt="TAGOM Logo" class="logo-img" />
+      <p class="version">TAGOM v.01</p>
+    </div>
+
+    <nav class="menu">
+      <a class="menu-item" routerLink="/dashboard">Dashboard</a>
+      <a class="menu-item active" routerLink="/product">Product</a>
+      <a class="menu-item" routerLink="/customers">Customers</a>
+      <a class="menu-item" routerLink="/supplier">Suppliers</a>
+      <a class="menu-item" routerLink="/sale">Sales</a>
+    </nav>
+
+    <div class="profile">
+      <img src="assets/raw.png" alt="User" class="profile-img" />
+      <div class="profile-info">
+        <h4>Mr {{ username }}</h4>
+        <p>{{ role }}</p>
+      </div>
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3 class="panel-title">All Products</h3>
+          <span class="muted">Manage, search, and add products</span>
+        </div>
+        <div class="actions">
+          <input type="search" placeholder="Search..." [(ngModel)]="searchTerm" (input)="loadProducts()" />
+          <button class="btn primary" (click)="openAddModal()">+ Add Product</button>
+        </div>
+      </div>
+
+      <div class="table-wrap" *ngIf="!loading; else loadingTpl">
+        <table class="grid">
+          <thead>
+            <tr>
+              <th>Image</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Supplier</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let product of products">
+              <td><img [src]="product.imageUrl || 'assets/default-product.png'" alt="Product" class="product-img"/></td>
+              <td>{{ product.name }}</td>
+              <td>{{ product.category }}</td>
+              <td>{{ product.price | currency:'USD' }}</td>
+              <td>{{ product.stock }}</td>
+              <td>{{ product.supplierName }}</td>
+              <td class="actions-cell">
+                <button class="btn ghost" (click)="openEditModal(product)">Edit</button>
+                <button class="btn danger" (click)="deleteProduct(product.id)">Delete</button>
+              </td>
+            </tr>
+            <tr *ngIf="!products.length">
+              <td colspan="7" class="empty">No products found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <ng-template #loadingTpl>
+      <div class="loading">Loading products...</div>
+    </ng-template>
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()"></div>
+<div class="modal" *ngIf="showModal">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <h3>{{ editing ? 'Edit Product' : 'Add New Product' }}</h3>
+    <form (ngSubmit)="saveProduct()" class="form-grid-two-columns">
+      <!-- Row 1 -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" [(ngModel)]="productForm.name" name="name" required />
+        </div>
+        <div class="form-group">
+          <label>Supplier</label>
+          <select [(ngModel)]="productForm.supplierId" name="supplierId" required>
+            <option value="">Select Supplier</option>
+            <option *ngFor="let s of suppliers" [value]="s.id">{{ s.name }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Price</label>
+          <input type="number" [(ngModel)]="productForm.price" name="price" required />
+        </div>
+        <div class="form-group">
+          <label>Stock</label>
+          <input type="number" [(ngModel)]="productForm.stock" name="stock" required />
+        </div>
+        <div class="form-group">
+          <label>Image</label>
+          <input type="file" (change)="onFileSelected($event)" accept="image/*" />
+          <div *ngIf="imagePreview" class="image-preview">
+            <img [src]="imagePreview" alt="Preview" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3 -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category</label>
+          <input type="text" [(ngModel)]="productForm.category" name="category" required />
+        </div>
+        <div class="form-group">
+          <label>Original Price</label>
+          <input type="number" [(ngModel)]="productForm.originalPrice" name="originalPrice" />
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="modal-actions">
+        <button type="submit" class="save-btn">{{ editing ? 'Update Product' : 'Add Product' }}</button>
+        <button type="button" class="cancel-btn" (click)="closeModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
