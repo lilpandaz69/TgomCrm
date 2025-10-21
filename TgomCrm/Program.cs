@@ -25,8 +25,8 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
-    options.Cookie.SameSite = SameSiteMode.None;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // HTTPS only
+    options.Cookie.SameSite = SameSiteMode.Lax; // allow cookies over HTTP
+    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // allow HTTP (no HTTPS required)
 });
 
 // ============================
@@ -36,7 +36,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
+        policy.WithOrigins("http://localhost:4200") // only HTTP, remove HTTPS version
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -63,12 +63,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 // ============================
-// ✅ Configure HTTPS for Kestrel
+// ✅ Use only HTTP (no HTTPS)
 // ============================
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenLocalhost(7043, listenOptions => listenOptions.UseHttps());
-});
+builder.WebHost.UseUrls("http://localhost:5062");
 
 var app = builder.Build();
 
@@ -79,6 +76,8 @@ app.UseRouting();
 
 // CORS must come before session/auth
 app.UseCors("AllowAngularApp");
+
+
 
 app.UseSession();
 app.UseAuthentication();
