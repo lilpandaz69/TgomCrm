@@ -44,6 +44,10 @@ namespace Tagom.Infrastructure.Persistence
                 .WithMany() 
                 .HasForeignKey(i => i.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Customer>()
+                .HasIndex(c => c.Phone)
+                .IsUnique();
         }
 
         public DbSet<Customer> Customers { get; set; } = null!;
