@@ -11,6 +11,11 @@ import { ProductComponent } from './product/product';
 import { SuppliersComponent } from './supplier/supplier';
 import { CustomersComponent } from './customers/customers';
 import { Sale } from './sale/sale';
+import { HttpClientModule } from '@angular/common/http';
+imports: [BrowserModule, ReactiveFormsModule]
+
+
+
 
 @NgModule({
   declarations: [

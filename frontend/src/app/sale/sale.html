@@ -1,1 +1,120 @@
-<p>sale works!</p>
+<div class="dashboard-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <img src="assets/Tagomlogo.png" alt="TAGOM Logo" class="logo-img" />
+      <p class="version">TAGOM v.01</p>
+    </div>
+
+    <nav class="menu">
+      <a class="menu-item" routerLink="/dashboard">Dashboard</a>
+      <a class="menu-item" routerLink="/product">Product</a>
+      <a class="menu-item" routerLink="/customers">Customers</a>
+      <a class="menu-item" routerLink="/supplier">Suppliers</a>
+      <a class="menu-item active" routerLink="/sale">Sales</a>
+    </nav>
+
+    <div class="profile">
+      <img src="assets/raw.png" alt="User" class="profile-img" />
+      <div class="profile-info">
+       <h4>Mr {{ username }}</h4>
+<p>{{ role }}</p>
+      </div>
+      <button class="logout-btn" type="button" (click)="logout()">Logout</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- KPIs -->
+    <div class="cards-grid">
+      <div class="card small">
+        <div class="card-icon">👤</div>
+        <h3>Selected Customer</h3>
+        <div class="kpi">{{ selectedCustomerName }}</div>
+      </div>
+      <div class="card small">
+        <div class="card-icon">🏭</div>
+        <h3>Suppliers Loaded</h3>
+        <div class="kpi">{{ suppliers.length }}</div>
+      </div>
+      <div class="card small">
+        <div class="card-icon">📦</div>
+        <h3>Products</h3>
+        <div class="kpi">{{ products.length }}</div>
+      </div>
+    </div>
+
+    <!-- Panel -->
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h3 class="panel-title">Create Sale</h3>
+          <span class="muted">Choose customer, supplier, product and quantity then save</span>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <form [formGroup]="form" (ngSubmit)="save()" class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px;">
+          
+          <!-- Customer -->
+          <div class="control">
+            <label>Customer</label>
+            <select formControlName="customerPhone">
+              <option [ngValue]="''">— Select Customer —</option>
+              <option *ngFor="let c of customers" [value]="c.phone">
+                {{ c.name }} — {{ c.phone }}
+              </option>
+            </select>
+            <div class="error" *ngIf="form.get('customerPhone')?.touched && form.get('customerPhone')?.invalid">
+              Customer is required.
+            </div>
+          </div>
+
+          <!-- Supplier -->
+          <div class="control">
+            <label>Supplier</label>
+            <select formControlName="supplierId" (change)="onSupplierChange()">
+              <option [ngValue]="null">— Select Supplier —</option>
+              <option *ngFor="let s of suppliers" [ngValue]="s.supplierId">{{ s.name }}</option>
+            </select>
+            <div class="error" *ngIf="form.get('supplierId')?.touched && form.get('supplierId')?.invalid">
+              Supplier is required.
+            </div>
+          </div>
+
+          <!-- Product -->
+          <div class="control">
+            <label>Product</label>
+            <select formControlName="productId">
+              <option [ngValue]="null">— Select Product —</option>
+              <option *ngFor="let p of products" [ngValue]="p.productId">{{ p.name }}</option>
+            </select>
+            <div class="error" *ngIf="form.get('productId')?.touched && form.get('productId')?.invalid">
+              Product is required.
+            </div>
+          </div>
+
+          <!-- Quantity -->
+          <div class="control">
+            <label>Quantity</label>
+            <input type="number" min="1" formControlName="quantity" />
+            <div class="error" *ngIf="form.get('quantity')?.touched && form.get('quantity')?.invalid">
+              Quantity must be at least 1.
+            </div>
+          </div>
+
+          <!-- Action -->
+          <div class="control" style="display:flex; align-items:end; gap:10px;">
+            <button class="btn primary" type="submit" [disabled]="loading || form.invalid">
+              {{ loading ? 'Saving…' : 'Save Sale' }}
+            </button>
+          </div>
+        </form>
+
+        <div class="success" *ngIf="successMsg">{{ successMsg }}</div>
+        <div class="error" *ngIf="errorMsg">{{ errorMsg }}</div>
+      </div>
+    </section>
+  </main>
+</div>

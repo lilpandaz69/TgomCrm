@@ -12,7 +12,7 @@ using Tagom.Infrastructure.Persistence;
 namespace Tagom.Infrastructure.Migrations
 {
     [DbContext(typeof(TagomDbContext))]
-    [Migration("20251021181606_intail")]
+    [Migration("20251023094852_intail")]
     partial class intail
     {
         /// <inheritdoc />
